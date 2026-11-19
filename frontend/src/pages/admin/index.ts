@@ -1,0 +1,9 @@
+export { AdminRoutes } from './AdminRoutes';
+export { AdminDashboardPage } from './AdminDashboardPage';
+export { AdminAppointmentsPage } from './AdminAppointmentsPage';
+export { AdminPatientsPage } from './AdminPatientsPage';
+export { AdminStaffPage } from './AdminStaffPage';
+export { AdminFacilitiesPage } from './AdminFacilitiesPage';
+export { AdminRecordsPage } from './AdminRecordsPage';
+export { AdminCatalogPage } from './AdminCatalogPage';
+export { AdminReportsPage } from './AdminReportsPage';

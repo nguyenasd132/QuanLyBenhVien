@@ -1,0 +1,1366 @@
+\documentclass[12pt,a4paper]{report}
+
+\usepackage{fontspec}
+\setmainfont{Times New Roman}
+\setsansfont{Arial}
+\setmonofont{Consolas}
+
+\usepackage[vietnamese]{babel}
+\usepackage[top=2.5cm,bottom=2.5cm,left=3.0cm,right=2.0cm]{geometry}
+\usepackage{setspace}
+\onehalfspacing
+
+\usepackage{xcolor}
+\definecolor{antamBlue}{HTML}{1D5BB8}
+\definecolor{antamNavy}{HTML}{10356E}
+\definecolor{antamSoft}{HTML}{E8F1FC}
+\definecolor{antamBorder}{HTML}{9EC0EC}
+\definecolor{inkDark}{HTML}{0F172A}
+\definecolor{inkMuted}{HTML}{475569}
+\definecolor{softGray}{HTML}{F8FAFC}
+
+\usepackage{titlesec}
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries\color{antamNavy}}
+  {\chaptertitlename\ \thechapter}{10pt}{\Huge}
+\titlespacing*{\chapter}{0pt}{-10pt}{18pt}
+
+\titleformat{\section}
+  {\normalfont\Large\bfseries\color{antamNavy}}{\thesection}{0.8em}{}
+\titleformat{\subsection}
+  {\normalfont\large\bfseries\color{inkDark}}{\thesubsection}{0.8em}{}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{inkMuted} Báo cáo Đồ án Công nghệ Phần mềm}
+\fancyhead[R]{\small\color{inkMuted} Hệ thống Quản lý Bệnh viện An Tâm}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{colortbl}
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=1.5em,itemsep=3pt,topsep=4pt}
+\setlist[enumerate]{leftmargin=1.5em,itemsep=3pt,topsep=4pt}
+
+\usepackage{float}
+\usepackage{caption}
+\captionsetup{font={small,bf},labelfont={color=antamNavy}}
+
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,shapes.multipart,fit,calc,backgrounds}
+
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=antamNavy,
+  urlcolor=antamBlue,
+  pdftitle={Báo cáo Đồ án Công nghệ Phần mềm - Hệ thống Bệnh viện An Tâm},
+  pdfauthor={Nhóm phát triển An Tâm}
+}
+
+% TikZ styles
+\tikzset{
+  box/.style={
+    rectangle, rounded corners=5pt, draw=antamBlue, thick,
+    fill=antamSoft, text=inkDark, font=\small, align=center,
+    minimum height=0.9cm, inner sep=6pt
+  },
+  whitebox/.style={
+    rectangle, rounded corners=5pt, draw=antamBorder, thick,
+    fill=white, text=inkDark, font=\small, align=center,
+    minimum height=0.85cm, inner sep=6pt
+  },
+  decision/.style={
+    diamond, aspect=2.1, draw=antamNavy, thick,
+    fill=antamSoft, text=inkDark, font=\small, align=center, inner sep=3pt
+  },
+  terminator/.style={
+    rectangle, rounded corners=12pt, draw=antamNavy, thick,
+    fill=antamBlue, text=white, font=\small\bfseries, align=center,
+    minimum height=0.85cm, inner sep=7pt
+  },
+  actor/.style={
+    rectangle, rounded corners=4pt, draw=antamNavy, thick,
+    fill=antamNavy, text=white, font=\small\bfseries, align=center,
+    minimum width=2.8cm, minimum height=0.85cm, inner sep=5pt
+  },
+  usecase/.style={
+    ellipse, draw=antamBlue, thick, fill=antamSoft,
+    text=inkDark, font=\footnotesize, align=center,
+    minimum width=4.8cm, minimum height=0.8cm, inner sep=4pt
+  },
+  erd/.style={
+    rectangle split, rectangle split parts=2,
+    rectangle split part fill={antamNavy, white},
+    rounded corners=3pt, draw=antamNavy, thick,
+    text=inkDark, font=\scriptsize, align=left, inner sep=4pt
+  },
+  flow/.style={-{Stealth[length=2.2mm]}, thick, color=antamNavy},
+  dashflow/.style={-{Stealth[length=2.2mm]}, thick, dashed, color=inkMuted},
+  groupbox/.style={
+    rectangle, rounded corners=6pt, draw=antamBorder, dashed, thick,
+    fill=softGray, inner sep=10pt
+  }
+}
+
+\newcommand{\erdnode}[2]{%
+  \textbf{\color{white}#1}%
+  \nodepart{two}%
+  \begin{tabular}{@{}l@{}}#2\end{tabular}%
+}
+
+\begin{document}
+
+% ==================== TRANG BIA ====================
+\begin{titlepage}
+  \centering
+  \vspace*{0.8cm}
+  {\large\bfseries BỘ GIÁO DỤC VÀ ĐÀO TẠO \\[4pt]
+  TRƯỜNG ĐẠI HỌC \dotfill} \\[1.2cm]
+
+  \rule{\textwidth}{1.5pt} \\[0.6cm]
+  {\large\bfseries\color{antamNavy} BÁO CÁO ĐỒ ÁN MÔN HỌC \\[4pt] CÔNG NGHỆ PHẦN MỀM} \\[0.8cm]
+  {\Huge\bfseries\color{antamNavy} HỆ THỐNG QUẢN LÝ BỆNH VIỆN \\ VÀ CỔNG SỨC KHỎE AN TÂM} \\[0.5cm]
+  {\normalsize\itshape Giải pháp đặt lịch khám theo buổi (Sáng/Chiều) cấp số thứ tự tự động, \\ quản lý hồ sơ khám chữa bệnh, thanh toán và điều hành bệnh viện} \\[0.6cm]
+  \rule{\textwidth}{1.5pt} \\[1.8cm]
+
+  \begin{tabular}{@{}ll@{}}
+    \textbf{Môn học:} & Công nghệ Phần mềm \\
+    \textbf{Đề tài:} & Xây dựng trang web Bệnh viện \& Cổng Sức khỏe An Tâm \\
+    \textbf{Kiến trúc:} & Ứng dụng Web tách biệt Giao diện (Client) và Máy chủ (Server) \\
+    \textbf{Công nghệ:} & React, TypeScript, Vite, Tailwind CSS, Express, Prisma, PostgreSQL 16 \\
+    \textbf{Hạ tầng:} & Docker Compose, Tailscale
+  \end{tabular}
+
+  \vfill
+  {\normalsize Tháng 11, 2026}
+\end{titlepage}
+
+% ==================== MUC LUC ====================
+\pagenumbering{roman}
+\tableofcontents
+\clearpage
+\listoffigures
+\clearpage
+\listoftables
+\clearpage
+
+\pagenumbering{arabic}
+
+% ==================== CHUONG 1 ====================
+\chapter{Giới thiệu đề tài và Khảo sát nghiệp vụ}
+
+\section{Bối cảnh bài toán và Lý do chọn đề tài}
+
+Trong hoạt động khám chữa bệnh hằng ngày tại các phòng khám và bệnh viện đa khoa quy mô vừa, quy trình quản lý thủ công hoặc sử dụng các phần mềm rời rạc thường gặp nhiều bất cập:
+
+\begin{enumerate}
+  \item \textbf{Ùn tắc tại quầy tiếp nhận vào giờ cao điểm:} Người bệnh thường tập trung đến lấy số thứ tự giấy vào đầu buổi sáng, không biết trước lượng người đang chờ ở từng chuyên khoa dẫn đến chờ đợi kéo dài.
+  \item \textbf{Thông tin chưa liên thông giữa các bộ phận:} Chỉ số sinh hiệu do điều dưỡng đo ban đầu khó cập nhật ngay sang màn hình bác sĩ; tình trạng đóng tiền viện phí tại quầy thu ngân chưa tự động đồng bộ sang bộ phận cấp phát thuốc.
+  \item \textbf{Nguy cơ sai sót khi kê đơn thuốc:} Nếu chỉ hỏi miệng, bác sĩ có thể bỏ sót tiền sử dị ứng thuốc hoặc bệnh nền mạn tính của người bệnh.
+  \item \textbf{Bất cập của việc đặt lịch theo khung giờ cố định (15 phút/ca):} Thời gian khám thực tế của mỗi bệnh nhân rất khác nhau (ca tái khám chỉ mất 5--7 phút, trong khi ca phức tạp mất 20--25 phút). Nếu đặt cứng theo từng mốc 15 phút, chỉ cần một ca kéo dài sẽ làm trễ toàn bộ lịch phía sau.
+  \item \textbf{Thiếu số liệu tổng hợp cho ban giám đốc:} Trưởng bệnh viện cần nắm nhanh lượt khám trong ngày, so sánh xu hướng tuần qua, danh sách bác sĩ đang trực và tỷ lệ lấp đầy giường bệnh ở từng khoa để kịp thời điều phối.
+\end{enumerate}
+
+Từ thực tế đó, đề tài \textbf{``Hệ thống Quản lý Bệnh viện và Cổng Sức khỏe An Tâm''} được xây dựng nhằm số hóa trọn vẹn quy trình từ lúc người bệnh đặt lịch trực tuyến (hoặc đến khám trực tiếp), làm thủ tục sàng lọc, thăm khám, kê đơn, thanh toán đến quản lý giường bệnh nội trú và thống kê điều hành bệnh viện.
+
+\section{Khảo sát quy trình khám chữa bệnh thực tế với 4 tác nhân}
+
+Hệ thống phục vụ khép kín 4 nhóm người dùng chính, được tổng hợp trong Bảng~\ref{tab:actors}.
+
+\begin{table}[H]
+  \centering
+  \caption{Phân công vai trò và trách nhiệm của 4 tác nhân trong hệ thống An Tâm}
+  \label{tab:actors}
+  \begin{tabularx}{\textwidth}{@{}c l X@{}}
+    \toprule
+    \textbf{STT} & \textbf{Tác nhân} & \textbf{Nhiệm vụ chính trong bệnh viện} \\
+    \midrule
+    1 & \textbf{Bệnh nhân} & Tra cứu bác sĩ/chuyên khoa; đặt lịch khám trước theo 3 cách; theo dõi số thứ tự đang khám tại phòng; đổi hoặc hủy lịch; quản lý hồ sơ sức khỏe (dị ứng, bệnh nền, BHYT); xem kết quả khám và đơn thuốc; thanh toán viện phí, tiền thuốc và nhận thông báo. \\
+    \addlinespace
+    2 & \textbf{Bác sĩ} & Quản lý lịch làm việc theo buổi (Sáng/Chiều) và giới hạn số lượt nhận; gọi bệnh nhân theo số thứ tự; xem hồ sơ, tiền sử dị ứng và sinh hiệu từ điều dưỡng; ghi nhận chẩn đoán, chỉ định xét nghiệm, kê đơn thuốc (có cảnh báo dị ứng tự động); hẹn lịch tái khám cho bệnh nhân. \\
+    \addlinespace
+    3 & \textbf{Điều dưỡng} & Tiếp nhận và xác nhận có mặt cho bệnh nhân đặt lịch trước; đăng ký khám trực tiếp cho bệnh nhân vãng lai; đo sinh hiệu ban đầu và kiểm tra giấy tờ/BHYT; xác nhận thanh toán viện phí/đơn thuốc; cấp phát thuốc đã thanh toán; xếp giường, chuyển giường và làm thủ tục xuất viện nội trú. \\
+    \addlinespace
+    4 & \textbf{Trưởng bệnh viện} & Xem bảng điều khiển thống kê toàn viện (lượt khám trong ngày, so sánh 7 ngày, bác sĩ đang trực, công suất giường bệnh theo khoa, doanh thu); quản lý danh mục khoa, phòng, giường bệnh, nhân sự, thuốc, dịch vụ và xuất báo cáo thống kê. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+Quy trình nghiệp vụ thực tế tại bệnh viện diễn ra khép kín theo 3 giai đoạn như minh họa tại Hình~\ref{fig:overall-process}.
+
+\begin{figure}[H]
+  \centering
+  \resizebox{0.98\textwidth}{!}{%
+  \begin{tikzpicture}[node distance=0.8cm and 0.9cm]
+    % Giai doan 1
+    \node[whitebox, text width=3.3cm] (online) {Bệnh nhân đặt lịch\\(3 luồng theo Buổi)};
+    \node[whitebox, text width=3.3cm, right=1cm of online] (stt) {Hệ thống cấp STT\\và Mã xác nhận};
+    \node[whitebox, text width=3.3cm, below=0.7cm of online] (walkin) {Bệnh nhân đến trực\\tiếp tại quầy};
+    \node[box, text width=3.4cm, right=1cm of walkin] (checkin) {Điều dưỡng Check-in\\hoặc cấp STT mới};
+    \node[box, text width=3.4cm, right=1cm of checkin] (triage) {Đo sinh hiệu ban đầu\\và kiểm tra BHYT};
+
+    \draw[flow] (online) -- (stt);
+    \draw[flow] (stt.south) -- (checkin.north);
+    \draw[flow] (walkin) -- (checkin);
+    \draw[flow] (checkin) -- (triage);
+
+    \begin{pgfonlayer}{background}
+      \node[groupbox, fit=(online)(stt)(walkin)(checkin)(triage),
+            label={[font=\small\bfseries,color=antamNavy]above left:1. Tiếp nhận và Sàng lọc}] (g1) {};
+    \end{pgfonlayer}
+
+    % Giai doan 2
+    \node[box, text width=3.1cm, below=1.6cm of walkin] (queue) {Hàng đợi phòng khám\\theo STT tăng dần};
+    \node[box, text width=3.1cm, right=0.8cm of queue] (exam) {Bác sĩ gọi số\\và thăm khám};
+    \node[box, text width=3.1cm, right=0.8cm of exam] (rx) {Kê đơn thuốc\\(kiểm tra dị ứng)};
+    \node[box, text width=3.1cm, right=0.8cm of rx] (inv) {Lập hóa đơn\\(Viện phí \& Thuốc)};
+
+    \draw[flow] (queue) -- (exam);
+    \draw[flow] (exam) -- (rx);
+    \draw[flow] (rx) -- (inv);
+
+    \begin{pgfonlayer}{background}
+      \node[groupbox, fit=(queue)(exam)(rx)(inv),
+            label={[font=\small\bfseries,color=antamNavy]above left:2. Khám bệnh và Kê đơn}] (g2) {};
+    \end{pgfonlayer}
+
+    % Giai doan 3
+    \node[box, text width=3.8cm, below=1.6cm of queue, xshift=1.2cm] (pay) {Bệnh nhân thanh toán\\(QR hoặc Tiền mặt)};
+    \node[box, text width=3.8cm, right=1.1cm of pay] (confirm) {Điều dưỡng xác nhận\\thu tiền và phát thuốc};
+    \node[whitebox, text width=3.8cm, right=1.1cm of confirm] (after) {Hẹn tái khám hoặc\\xếp giường nhập viện};
+
+    \draw[flow] (pay) -- (confirm);
+    \draw[flow] (confirm) -- (after);
+
+    \begin{pgfonlayer}{background}
+      \node[groupbox, fit=(pay)(confirm)(after),
+            label={[font=\small\bfseries,color=antamNavy]above left:3. Thanh toán và Sau khám}] (g3) {};
+    \end{pgfonlayer}
+
+    \draw[flow] (g1.south) -- (g2.north);
+    \draw[flow] (g2.south) -- (g3.north);
+  \end{tikzpicture}%
+  }
+  \caption{Sơ đồ quy trình nghiệp vụ khám chữa bệnh tổng thể ngoài thực tế}
+  \label{fig:overall-process}
+\end{figure}
+
+\section{Cơ chế đặt lịch 3 luồng theo Buổi (Sáng/Chiều) và Cấp Số thứ tự}
+
+\subsection{Nguyên tắc đặt lịch theo Buổi và đánh Số thứ tự (STT)}
+\begin{itemize}
+  \item \textbf{Chia ca theo 2 buổi trong ngày:} Buổi Sáng từ \texttt{07:30} đến \texttt{11:30}; Buổi Chiều từ \texttt{13:30} đến \texttt{17:00}.
+  \item \textbf{Cấp Số thứ tự tự động và không trùng lặp:} Mỗi bác sĩ trong một ngày và buổi khám có một giới hạn lượt khám tối đa (mặc định 20 lượt/buổi). Khi người bệnh đặt lịch thành công (hoặc điều dưỡng tiếp nhận bệnh nhân đến trực tiếp), hệ thống tự động cấp một Số thứ tự tăng dần (\texttt{\#01, \#02, \#03...}) gắn với bác sĩ, ngày và buổi đó.
+  \item \textbf{Tính giờ khám dự kiến tham khảo:} Dựa trên giờ bắt đầu buổi khám, số thứ tự được cấp và thời lượng khám trung bình mỗi lượt (ví dụ 12 phút/lượt), hệ thống tự động ước lượng thời gian dự kiến (ví dụ STT \texttt{\#04} buổi sáng tương ứng khoảng \texttt{08:06}) để bệnh nhân chủ động thời gian đến viện.
+  \item \textbf{Giữ nguyên STT khi có người hủy lịch:} Nếu một bệnh nhân hủy lịch (ví dụ người mang STT \texttt{\#02} hủy), hệ thống \textbf{không đánh lại số của những người đã đặt} (\texttt{\#03} vẫn giữ nguyên \texttt{\#03}) để tránh làm xáo trộn phiếu hẹn của người khác; người đặt sau vẫn nhận số kế tiếp (\texttt{\#04}).
+\end{itemize}
+
+\subsection{Ba luồng đặt lịch linh hoạt cho người dùng cuối}
+Tùy theo nhu cầu tìm kiếm, người bệnh có thể bắt đầu đặt lịch từ 1 trong 3 cách:
+\begin{enumerate}
+  \item \textbf{Theo Chuyên khoa:} Chọn chuyên khoa cần khám (bao gồm Nội tổng quát, Tim mạch, Nhi khoa, Da liễu, Ngoại khoa, Sản \& Nhi...) $\rightarrow$ Chọn ngày khám $\rightarrow$ Chọn bác sĩ và buổi (Sáng/Chiều) còn chỗ.
+  \item \textbf{Theo Bác sĩ:} Tìm và chọn đích danh bác sĩ mong muốn $\rightarrow$ Chọn ngày và buổi (Sáng/Chiều) bác sĩ có lịch trực.
+  \item \textbf{Theo Ngày khám:} Chọn ngày rảnh trong tuần $\rightarrow$ Hệ thống liệt kê các chuyên khoa có bác sĩ trực trong ngày đó $\rightarrow$ Chọn chuyên khoa, bác sĩ và buổi khám.
+\end{enumerate}
+
+\section{Phân tích lựa chọn công nghệ và Cơ sở dữ liệu}
+
+\subsection{Công nghệ xây dựng giao diện và máy chủ}
+\begin{itemize}
+  \item \textbf{Giao diện (Frontend):} Sử dụng React, Vite, TypeScript và Tailwind CSS giúp thao tác mượt mà trên cả máy tính lẫn điện thoại, chuyển đổi nhanh giữa các màn hình mà không phải tải lại trang, kèm thư viện biểu đồ trực quan cho trang thống kê bệnh viện.
+  \item \textbf{Máy chủ xử lý (Backend):} Sử dụng Node.js, Express, TypeScript và Prisma tách biệt rõ tầng xử lý nghiệp vụ và phân quyền truy cập, đảm bảo mọi tính toán quan trọng (cấp STT, kiểm tra dị ứng, xác nhận thanh toán) đều được kiểm soát chặt chẽ tại máy chủ.
+\end{itemize}
+
+\subsection{So sánh lựa chọn cơ sở dữ liệu: PostgreSQL + JSONB hay MongoDB?}
+
+Dữ liệu bệnh viện gồm hai nhóm tính chất trái ngược nhau:
+\begin{itemize}
+  \item \textbf{Nhóm cần tính kỷ luật, ràng buộc chặt chẽ:} Tài khoản, phân ca bác sĩ, cấp số thứ tự không được trùng khi nhiều người bấm cùng lúc, hóa đơn viện phí/đơn thuốc, giao dịch thu tiền, trạng thái giường bệnh.
+  \item \textbf{Nhóm có cấu trúc thay đổi linh hoạt theo từng chuyên khoa:} Chỉ số sinh hiệu khi sàng lọc, danh sách kiểm tra giấy tờ BHYT, tiền sử dị ứng và bệnh nền của từng bệnh nhân, kết quả khám chi tiết khác nhau giữa các khoa (Tim mạch khác Da liễu hay Nhi khoa), chi tiết các dòng thuốc/dịch vụ trong đơn và hóa đơn.
+\end{itemize}
+
+\begin{table}[H]
+  \centering
+  \caption{So sánh phương án thiết kế cơ sở dữ liệu cho hệ thống An Tâm}
+  \label{tab:db-compare}
+  \begin{tabularx}{\textwidth}{@{}l X X X@{}}
+    \toprule
+    \textbf{Tiêu chí đánh giá} & \textbf{Chỉ dùng MongoDB} & \textbf{Tách 2 CSDL (PostgreSQL + MongoDB)} & \textbf{PostgreSQL + cột JSONB (Lựa chọn)} \\
+    \midrule
+    \textbf{Chống trùng STT \& Khóa đồng thời} & Kiểm soát ràng buộc chéo nhiều thực thể phức tạp hơn. & Tốt ở phần PostgreSQL, nhưng dễ phát sinh lỗi đồng bộ khi dữ liệu nằm ở 2 nơi. & \textbf{Tốt nhất.} Hỗ trợ giao dịch an toàn, khóa dữ liệu tuần tự khi cấp STT và chặn trùng lịch ở mức CSDL. \\
+    \addlinespace
+    \textbf{Thanh toán viện phí \& Đơn thuốc} & Dễ lệch trạng thái nếu thiếu giao dịch chặt giữa hóa đơn và đơn thuốc. & Khó giữ giao dịch đồng bộ xuyên suốt 2 hệ CSDL khác nhau. & \textbf{An toàn tuyệt đối.} Cập nhật thu tiền, hóa đơn, đơn thuốc và thông báo trong cùng một bước thống nhất. \\
+    \addlinespace
+    \textbf{Lưu thông tin linh hoạt} & Lưu tự nhiên dưới dạng tài liệu JSON. & Lưu sang MongoDB. & \textbf{Rất thuận tiện.} Cột JSONB lưu dữ liệu đa dạng cấu trúc ngay trong PostgreSQL và vẫn tìm kiếm nhanh. \\
+    \addlinespace
+    \textbf{Thống kê Dashboard} & Tổng hợp số liệu từ nhiều tập hợp liên kết khá cồng kềnh. & Phải gom dữ liệu từ 2 nguồn khác nhau. & \textbf{Nhanh và chuẩn xác} khi tính lượt khám 7 ngày, công suất giường theo khoa và doanh thu. \\
+    \addlinespace
+    \textbf{Cài đặt \& Bảo trì} & Gọn nhẹ (1 hệ thống). & Tốn công cài đặt, sao lưu và đồng bộ gấp đôi. & \textbf{Gọn nhẹ tối ưu} (chỉ 1 hệ quản trị CSDL duy nhất cho toàn bộ ứng dụng). \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\textbf{Kết luận:} Chọn PostgreSQL 16 kết hợp kiểu dữ liệu JSONB là phương án hợp lý nhất: vừa bảo đảm an toàn tuyệt đối cho nghiệp vụ đặt lịch theo STT và thanh toán viện phí, vừa có được sự linh hoạt cho hồ sơ khám đa chuyên khoa mà không làm phức tạp hệ thống.
+
+\subsection{Hỗ trợ làm việc nhóm với Docker Compose và Tailscale}
+\begin{itemize}
+  \item \textbf{Docker Compose:} Đóng gói cơ sở dữ liệu PostgreSQL, máy chủ Backend và giao diện Frontend thành các khối đồng nhất. Thành viên mới chỉ cần tải mã nguồn về và chạy một lệnh khởi động là có đầy đủ môi trường và dữ liệu mẫu giống hệt nhau.
+  \item \textbf{Tailscale:} Tạo mạng kết nối riêng tư giữa các máy tính và điện thoại trong nhóm qua Internet mà không cần thuê máy chủ đám mây hay mở cổng mạng phức tạp, thuận tiện cho cả nhóm cùng kiểm thử giao diện trên điện thoại thật.
+\end{itemize}
+
+% ==================== CHUONG 2 ====================
+\chapter{Phân tích yêu cầu và Đặc tả Use Case}
+
+\section{Yêu cầu chức năng đầy đủ}
+
+\subsection{Nhóm 1: Chức năng chung và Tra cứu công khai}
+\begin{itemize}
+  \item \textbf{Đăng nhập, Đăng ký và Tài khoản cá nhân:} Người bệnh tự đăng ký tài khoản mới; hỗ trợ đăng nhập bằng email và mật khẩu; cung cấp sẵn nút chọn nhanh các tài khoản mẫu cho 4 vai trò để thuận tiện kiểm thử; cho phép cập nhật thông tin cá nhân và đổi mật khẩu.
+  \item \textbf{Tra cứu bác sĩ và Hỗ trợ:} Xem danh sách bác sĩ theo chuyên khoa, phòng khám, kinh nghiệm và xem lịch trống theo 3 luồng; cung cấp mục Trung tâm trợ giúp hướng dẫn quy trình đặt lịch và thanh toán.
+  \item \textbf{Hệ thống thông báo:} Tự động gửi thông báo khi đặt lịch thành công, khi bác sĩ gọi số tới lượt, khi có kết quả khám/đơn thuốc mới, khi bác sĩ đặt lịch tái khám và khi điều dưỡng xác nhận đã thanh toán.
+\end{itemize}
+
+\subsection{Nhóm 2: Cổng Bệnh nhân}
+\begin{itemize}
+  \item \textbf{Trang chủ cá nhân hóa:} Hiển thị lời chào, thẻ nhắc lịch hẹn sắp tới (kèm STT và giờ dự kiến), 6 ô dịch vụ truy cập nhanh, lịch hẹn gần nhất và thông báo mới.
+  \item \textbf{Đặt lịch khám 3 luồng:} Đặt lịch theo Chuyên khoa (gồm Nội tổng quát), theo Bác sĩ hoặc theo Ngày; chọn buổi Sáng/Chiều và nhận ngay phiếu hẹn có STT cùng mã check-in.
+  \item \textbf{Quản lý lịch hẹn:} Xem chi tiết lịch hẹn, theo dõi STT đang khám hiện tại tại phòng khám để ước lượng thời gian chờ, đổi lịch sang ngày/buổi khác hoặc hủy lịch kèm lý do.
+  \item \textbf{Hồ sơ sức khỏe:} Xem và cập nhật thông tin hành chính, số thẻ BHYT, nhóm máu, tiền sử dị ứng thuốc/thực phẩm, bệnh nền và người liên hệ khẩn cấp; tra cứu lại toàn bộ lịch sử khám và lịch sử đơn thuốc.
+  \item \textbf{Xem kết quả khám và đơn thuốc:} Xem đầy đủ chỉ số sinh hiệu, triệu chứng, chẩn đoán, kết quả cận lâm sàng và danh sách thuốc (liều lượng, cách dùng), hỗ trợ bản xem thân thiện để in.
+  \item \textbf{Thanh toán viện phí và đơn thuốc:} Phân tách rõ hóa đơn phí khám/xét nghiệm và hóa đơn tiền thuốc; hỗ trợ quét mã QR chuyển khoản mô phỏng hoặc đăng ký đóng tiền mặt tại quầy; xem biên lai đã thanh toán.
+\end{itemize}
+
+\subsection{Nhóm 3: Cổng Bác sĩ}
+\begin{itemize}
+  \item \textbf{Danh sách hàng đợi theo buổi và STT:} Xem danh sách bệnh nhân phân chia theo Buổi Sáng / Buổi Chiều, sắp xếp theo STT tăng dần; thao tác nút \textbf{``Gọi số tiếp theo''} để mời bệnh nhân vào khám.
+  \item \textbf{Xem hồ sơ và Tiền sử người bệnh:} Xem thông tin cá nhân, \textbf{cảnh báo nổi bật tiền sử dị ứng}, chỉ số sinh hiệu do điều dưỡng đo trước đó và lịch sử các lần khám cũ.
+  \item \textbf{Khám bệnh, Kết luận và Kê đơn thuốc:} Nhập triệu chứng, chẩn đoán (kèm mã bệnh ICD-10), kết quả chuyên khoa, chỉ định xét nghiệm cận lâm sàng; chọn thuốc từ danh mục kèm liều dùng; hệ thống \textbf{tự động cảnh báo nếu thuốc kê trùng với dị ứng hoặc bệnh nền của bệnh nhân}; công bố kết quả khám để tự động tạo hóa đơn và gửi thông báo cho bệnh nhân.
+  \item \textbf{Đặt lịch tái khám cho bệnh nhân:} Đặt lịch tái khám hoặc chuyển chuyên khoa theo ngày và buổi ngay tại màn hình khám bệnh, cấp luôn STT mới cho bệnh nhân.
+  \item \textbf{Quản lý lịch trực cá nhân:} Bật/tắt trạng thái nhận đặt lịch cho từng buổi khám và điều chỉnh số lượt khám tối đa mỗi buổi.
+\end{itemize}
+
+\subsection{Nhóm 4: Cổng Điều dưỡng}
+\begin{itemize}
+  \item \textbf{Tiếp đón và Check-in:} Xác nhận bệnh nhân đặt lịch trực tuyến đã đến viện theo mã hẹn hoặc STT; tiếp nhận đăng ký khám trực tiếp tại quầy cho bệnh nhân vãng lai (có tùy chọn ưu tiên và cấp STT kế tiếp).
+  \item \textbf{Làm thủ tục và Đo sinh hiệu ban đầu:} Đo và ghi nhận huyết áp, mạch, nhiệt độ, SpO2, chiều cao, cân nặng (tự tính chỉ số BMI) cùng danh sách kiểm tra giấy tờ, thẻ BHYT trước khi bệnh nhân vào gặp bác sĩ.
+  \item \textbf{Xác nhận thanh toán và Cấp phát thuốc:} Kiểm tra các hóa đơn viện phí/đơn thuốc đang chờ thanh toán hoặc chờ đối soát chuyển khoản QR; xác nhận đã thu tiền (hoặc từ chối giao dịch QR chưa hợp lệ); xác nhận cấp phát thuốc và tự động trừ tồn kho cho các đơn thuốc đã thanh toán.
+  \item \textbf{Quản lý giường bệnh nội trú:} Theo dõi sơ đồ giường theo từng khoa và phòng (Trống, Đang sử dụng, Bảo trì); thực hiện xếp giường nhập viện, chuyển giường, xuất viện hoặc chuyển trạng thái bảo trì.
+\end{itemize}
+
+\subsection{Nhóm 5: Cổng Trưởng bệnh viện / Quản lý}
+\begin{itemize}
+  \item \textbf{Bảng điều khiển thống kê tổng quan:} Hiển thị 4 chỉ số chính (Lượt khám hôm nay, Lịch hẹn hôm nay, Bác sĩ đang trực, Giường đang sử dụng), biểu đồ so sánh lượt khám 7 ngày qua với 7 ngày trước, danh sách bác sĩ đang trực, bảng lịch hẹn hôm nay có bộ lọc tìm kiếm, biểu đồ tỷ lệ sử dụng giường bệnh theo từng khoa và thống kê doanh thu (viện phí và tiền thuốc).
+  \item \textbf{Quản trị danh mục và vận hành:} Quản lý Khoa chuyên môn, Phòng khám, Giường bệnh; quản lý danh sách Bác sĩ, Điều dưỡng và phân công lịch trực; quản lý danh mục Thuốc (đơn giá, tồn kho, chống chỉ định) và Dịch vụ kỹ thuật; tra cứu toàn bộ lịch hẹn, bệnh nhân, hồ sơ bệnh án và xuất file báo cáo Excel/CSV.
+\end{itemize}
+
+\section{Yêu cầu phi chức năng}
+\begin{enumerate}
+  \item \textbf{Bảo mật và Phân quyền chặt chẽ:} Mật khẩu người dùng được mã hóa một chiều; mỗi chức năng chỉ cho phép đúng vai trò truy cập (bệnh nhân chỉ xem được hồ sơ, đơn thuốc và hóa đơn của chính mình; nhân viên y tế chỉ thao tác đúng nghiệp vụ được giao).
+  \item \textbf{An toàn và toàn vẹn dữ liệu:} Đảm bảo không bao giờ cấp trùng STT khi nhiều người đặt lịch cùng lúc; đảm bảo thao tác xác nhận thanh toán diễn ra trọn vẹn (hóa đơn, đơn thuốc và thông báo đồng bộ cùng lúc; nếu có sự cố thì hủy toàn bộ bước dở dang).
+  \item \textbf{Giao diện thân thiện trên nhiều thiết bị:} Tự động điều chỉnh bố cục gọn gàng trên màn hình điện thoại (có thanh điều hướng phía dưới) và đầy đủ thông tin trên màn hình máy tính (có thanh menu bên trái).
+  \item \textbf{Hiệu năng ổn định:} Thời gian phản hồi các thao tác tra cứu lịch trống, lưu bệnh án và tổng hợp biểu đồ thống kê nhanh chóng, mượt mà.
+\end{enumerate}
+
+\section{Sơ đồ Use Case tổng quát và từng vai trò}
+
+\begin{figure}[H]
+  \centering
+  \resizebox{0.92\textwidth}{!}{%
+  \begin{tikzpicture}[node distance=0.45cm]
+    % Use cases in center
+    \node[usecase] (uc1) {Đăng nhập / Đăng ký / Tài khoản};
+    \node[usecase, below=0.3cm of uc1] (uc2) {Đặt lịch 3 luồng \& Quản lý lịch hẹn};
+    \node[usecase, below=0.3cm of uc2] (uc3) {Xem Hồ sơ sức khỏe \& Kết quả khám};
+    \node[usecase, below=0.3cm of uc3] (uc4) {Thanh toán viện phí / Đơn thuốc};
+    \node[usecase, below=0.3cm of uc4] (uc5) {Khám bệnh, Kê đơn cảnh báo dị ứng \& Tái khám};
+    \node[usecase, below=0.3cm of uc5] (uc6) {Tiếp đón Check-in, Vãng lai \& Đo sinh hiệu};
+    \node[usecase, below=0.3cm of uc6] (uc7) {Xác nhận thanh toán \& Cấp phát thuốc};
+    \node[usecase, below=0.3cm of uc7] (uc8) {Quản lý giường bệnh nội trú};
+    \node[usecase, below=0.3cm of uc8] (uc9) {Xem thống kê bệnh viện \& Xuất báo cáo};
+    \node[usecase, below=0.3cm of uc9] (uc10) {Quản lý Khoa, Phòng, Nhân sự, Thuốc \& Dịch vụ};
+
+    \begin{pgfonlayer}{background}
+      \node[groupbox, fit=(uc1)(uc10), inner sep=12pt,
+            label={[font=\small\bfseries,color=antamNavy]above:Hệ thống Bệnh viện và Cổng Sức khỏe An Tâm}] {};
+    \end{pgfonlayer}
+
+    % Actors
+    \node[actor, left=2.2cm of uc2] (pat) {Bệnh nhân};
+    \node[actor, left=2.2cm of uc5] (doc) {Bác sĩ};
+    \node[actor, right=2.2cm of uc6] (nur) {Điều dưỡng};
+    \node[actor, right=2.2cm of uc9] (adm) {Trưởng bệnh viện};
+
+    \draw[thick, color=antamNavy] (pat) -- (uc1.west);
+    \draw[thick, color=antamNavy] (pat) -- (uc2.west);
+    \draw[thick, color=antamNavy] (pat) -- (uc3.west);
+    \draw[thick, color=antamNavy] (pat) -- (uc4.west);
+
+    \draw[thick, color=antamNavy] (doc) -- (uc1.west);
+    \draw[thick, color=antamNavy] (doc) -- (uc5.west);
+
+    \draw[thick, color=antamNavy] (nur) -- (uc1.east);
+    \draw[thick, color=antamNavy] (nur) -- (uc6.east);
+    \draw[thick, color=antamNavy] (nur) -- (uc7.east);
+    \draw[thick, color=antamNavy] (nur) -- (uc8.east);
+
+    \draw[thick, color=antamNavy] (adm) -- (uc1.east);
+    \draw[thick, color=antamNavy] (adm) -- (uc9.east);
+    \draw[thick, color=antamNavy] (adm) -- (uc10.east);
+  \end{tikzpicture}%
+  }
+  \caption{Sơ đồ Use Case tổng quát toàn hệ thống}
+  \label{fig:uc-overall}
+\end{figure}
+
+Chi tiết các Use Case của từng vai trò được minh họa tách riêng ở các hình từ Hình~\ref{fig:uc-patient} đến Hình~\ref{fig:uc-admin}.
+
+\begin{figure}[H]
+  \centering
+  \begin{minipage}[t]{0.48\textwidth}
+    \centering
+    \resizebox{\linewidth}{!}{%
+    \begin{tikzpicture}
+      \node[usecase] (p1) {Tra cứu Bác sĩ \& Chuyên khoa};
+      \node[usecase, below=0.25cm of p1] (p2) {Đặt lịch theo Khoa / Bác sĩ / Ngày};
+      \node[usecase, below=0.25cm of p2] (p3) {Xem STT đang khám, Đổi / Hủy lịch};
+      \node[usecase, below=0.25cm of p3] (p4) {Cập nhật Hồ sơ dị ứng \& Bệnh nền};
+      \node[usecase, below=0.25cm of p4] (p5) {Xem Kết quả khám \& Đơn thuốc};
+      \node[usecase, below=0.25cm of p5] (p6) {Thanh toán QR hoặc Tại quầy};
+      \node[usecase, below=0.25cm of p6] (p7) {Xem Thông báo kết quả \& Lịch hẹn};
+      \begin{pgfonlayer}{background}
+        \node[groupbox, fit=(p1)(p7), label={[font=\footnotesize\bfseries,color=antamNavy]above:Cổng Bệnh nhân}] {};
+      \end{pgfonlayer}
+      \node[actor, left=1.4cm of p4] (pa) {Bệnh nhân};
+      \foreach \n in {p1,p2,p3,p4,p5,p6,p7} \draw[thick, color=antamNavy] (pa) -- (\n.west);
+    \end{tikzpicture}%
+    }
+    \caption{Use Case vai trò Bệnh nhân}
+    \label{fig:uc-patient}
+  \end{minipage}\hfill
+  \begin{minipage}[t]{0.48\textwidth}
+    \centering
+    \resizebox{\linewidth}{!}{%
+    \begin{tikzpicture}
+      \node[usecase] (d1) {Xem hàng đợi theo Buổi \& STT};
+      \node[usecase, below=0.25cm of d1] (d2) {Gọi số tiếp theo \& Cập nhật trạng thái};
+      \node[usecase, below=0.25cm of d2] (d3) {Xem hồ sơ, dị ứng \& sinh hiệu};
+      \node[usecase, below=0.25cm of d3] (d4) {Ghi chẩn đoán, Kết quả \& Chỉ định XN};
+      \node[usecase, below=0.25cm of d4] (d5) {Kê đơn thuốc có cảnh báo dị ứng};
+      \node[usecase, below=0.25cm of d5] (d6) {Công bố kết quả \& Đặt lịch tái khám};
+      \node[usecase, below=0.25cm of d6] (d7) {Quản lý lịch làm việc theo buổi};
+      \begin{pgfonlayer}{background}
+        \node[groupbox, fit=(d1)(d7), label={[font=\footnotesize\bfseries,color=antamNavy]above:Cổng Bác sĩ}] {};
+      \end{pgfonlayer}
+      \node[actor, left=1.4cm of d4] (da) {Bác sĩ};
+      \foreach \n in {d1,d2,d3,d4,d5,d6,d7} \draw[thick, color=antamNavy] (da) -- (\n.west);
+    \end{tikzpicture}%
+    }
+    \caption{Use Case vai trò Bác sĩ}
+    \label{fig:uc-doctor}
+  \end{minipage}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \begin{minipage}[t]{0.48\textwidth}
+    \centering
+    \resizebox{\linewidth}{!}{%
+    \begin{tikzpicture}
+      \node[usecase] (n1) {Check-in bệnh nhân đặt lịch trước};
+      \node[usecase, below=0.28cm of n1] (n2) {Đăng ký bệnh nhân vãng lai \& Cấp STT};
+      \node[usecase, below=0.28cm of n2] (n3) {Đo sinh hiệu \& Làm thủ tục BHYT};
+      \node[usecase, below=0.28cm of n3] (n4) {Xác nhận thanh toán viện phí / đơn thuốc};
+      \node[usecase, below=0.28cm of n4] (n5) {Cấp phát thuốc cho đơn đã thanh toán};
+      \node[usecase, below=0.28cm of n5] (n6) {Xếp giường, Chuyển giường \& Xuất viện};
+      \begin{pgfonlayer}{background}
+        \node[groupbox, fit=(n1)(n6), label={[font=\footnotesize\bfseries,color=antamNavy]above:Cổng Điều dưỡng}] {};
+      \end{pgfonlayer}
+      \node[actor, left=1.4cm of n3, yshift=-0.4cm] (na) {Điều dưỡng};
+      \foreach \n in {n1,n2,n3,n4,n5,n6} \draw[thick, color=antamNavy] (na) -- (\n.west);
+    \end{tikzpicture}%
+    }
+    \caption{Use Case vai trò Điều dưỡng}
+    \label{fig:uc-nurse}
+  \end{minipage}\hfill
+  \begin{minipage}[t]{0.48\textwidth}
+    \centering
+    \resizebox{\linewidth}{!}{%
+    \begin{tikzpicture}
+      \node[usecase] (a1) {Xem thống kê KPI \& Biểu đồ 7 ngày};
+      \node[usecase, below=0.28cm of a1] (a2) {Theo dõi Bác sĩ trực \& Công suất giường};
+      \node[usecase, below=0.28cm of a2] (a3) {Quản lý Khoa, Phòng khám \& Giường bệnh};
+      \node[usecase, below=0.28cm of a3] (a4) {Quản lý Nhân sự \& Lịch trực};
+      \node[usecase, below=0.28cm of a4] (a5) {Quản lý Danh mục Thuốc \& Dịch vụ};
+      \node[usecase, below=0.28cm of a5] (a6) {Tra cứu hồ sơ \& Xuất báo cáo};
+      \begin{pgfonlayer}{background}
+        \node[groupbox, fit=(a1)(a6), label={[font=\footnotesize\bfseries,color=antamNavy]above:Cổng Quản trị \& Điều hành}] {};
+      \end{pgfonlayer}
+      \node[actor, left=1.4cm of a3, yshift=-0.4cm] (aa) {Trưởng BV};
+      \foreach \n in {a1,a2,a3,a4,a5,a6} \draw[thick, color=antamNavy] (aa) -- (\n.west);
+    \end{tikzpicture}%
+    }
+    \caption{Use Case vai trò Trưởng bệnh viện}
+    \label{fig:uc-admin}
+  \end{minipage}
+\end{figure}
+
+\section{Bảng đặc tả chi tiết các Use Case cốt lõi}
+
+\begin{table}[H]
+  \centering
+  \caption{Đặc tả UC-01: Đặt lịch khám 3 luồng theo Buổi và Cấp Số thứ tự}
+  \begin{tabularx}{\textwidth}{@{}l X@{}}
+    \toprule
+    \textbf{Thành phần} & \textbf{Mô tả nghiệp vụ} \\
+    \midrule
+    \textbf{Tên Use Case} & UC-01: Đặt lịch khám 3 luồng theo Buổi (Sáng/Chiều) và cấp STT tự động \\
+    \textbf{Tác nhân} & Bệnh nhân \\
+    \textbf{Mô tả tóm tắt} & Người bệnh chọn đặt lịch theo Chuyên khoa, theo Bác sĩ hoặc theo Ngày; chọn buổi còn lượt trống và nhận phiếu hẹn kèm STT. \\
+    \textbf{Điều kiện tiên quyết} & Bệnh nhân đã đăng nhập hệ thống; lịch làm việc của bác sĩ vào ngày và buổi đó đang mở nhận bệnh. \\
+    \textbf{Kết quả sau thực hiện} & Hệ thống tạo lịch hẹn mới với STT duy nhất trong buổi, tính giờ khám dự kiến và gửi thông báo xác nhận cho bệnh nhân. \\
+    \textbf{Luồng sự kiện chính} &
+      1. Bệnh nhân vào trang \textbf{Đặt lịch khám} và chọn cách tìm kiếm mong muốn (Theo chuyên khoa / Theo bác sĩ / Theo ngày). \newline
+      2. Hệ thống hiển thị danh sách bác sĩ cùng số lượt còn trống và STT dự kiến của Buổi Sáng / Buổi Chiều. \newline
+      3. Bệnh nhân chọn buổi khám phù hợp, nhập triệu chứng ban đầu và bấm \textbf{Xác nhận đặt lịch}. \newline
+      4. Hệ thống khóa tạm lịch buổi đó để kiểm tra điều kiện (còn chỗ, chưa đặt trùng bác sĩ trong cùng buổi), cấp STT kế tiếp và lưu lịch hẹn. \newline
+      5. Màn hình hiển thị phiếu xác nhận có mã lịch hẹn, STT và giờ dự kiến. \\
+    \textbf{Trường hợp ngoại lệ} &
+      -- \textbf{Buổi khám đã đủ lượt:} Hệ thống báo buổi đã đầy và gợi ý chọn buổi/ngày khác. \newline
+      -- \textbf{Đặt trùng buổi:} Bệnh nhân đã có lịch hẹn chưa hủy với cùng bác sĩ trong cùng buổi đó $\rightarrow$ hệ thống thông báo không cho đặt trùng. \newline
+      -- \textbf{Hủy lịch sau khi đặt:} Lịch hẹn chuyển sang trạng thái đã hủy, STT của những bệnh nhân khác vẫn giữ nguyên. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{table}[H]
+  \centering
+  \caption{Đặc tả UC-02: Tiếp đón Check-in, Đăng ký khám trực tiếp và Đo sinh hiệu}
+  \begin{tabularx}{\textwidth}{@{}l X@{}}
+    \toprule
+    \textbf{Thành phần} & \textbf{Mô tả nghiệp vụ} \\
+    \midrule
+    \textbf{Tên Use Case} & UC-02: Tiếp đón Check-in, Đăng ký bệnh nhân đến trực tiếp và Đo sinh hiệu \\
+    \textbf{Tác nhân} & Điều dưỡng \\
+    \textbf{Mô tả tóm tắt} & Điều dưỡng xác nhận bệnh nhân đặt trước đã có mặt hoặc tạo phiếu khám tại quầy cho bệnh nhân vãng lai, sau đó đo chỉ số sinh hiệu và kiểm tra thủ tục giấy tờ trước khi vào phòng bác sĩ. \\
+    \textbf{Điều kiện tiên quyết} & Điều dưỡng đã đăng nhập; phòng khám của bác sĩ đang có lịch làm việc trong buổi hiện tại. \\
+    \textbf{Kết quả sau thực hiện} & Bệnh nhân chuyển sang trạng thái sẵn sàng khám; thông tin sinh hiệu và thủ tục BHYT được gắn trực tiếp vào phiếu khám. \\
+    \textbf{Luồng sự kiện chính} &
+      1. Điều dưỡng tìm lịch hẹn của bệnh nhân theo mã hẹn, số điện thoại hoặc STT. \newline
+      2. Với bệnh nhân đã đặt trực tuyến: bấm \textbf{Check-in} để xác nhận có mặt. \newline
+      3. Với bệnh nhân vãng lai: chọn hồ sơ (hoặc tạo nhanh thông tin bệnh nhân), chọn bác sĩ/buổi hiện tại, đánh dấu ưu tiên nếu cần để hệ thống cấp STT kế tiếp. \newline
+      4. Điều dưỡng đo và nhập huyết áp, nhịp tim, nhiệt độ, SpO2, chiều cao, cân nặng (tự tính BMI) cùng checklist kiểm tra BHYT. \newline
+      5. Hệ thống lưu thông tin và đưa bệnh nhân lên danh sách chờ của bác sĩ. \\
+    \textbf{Trường hợp ngoại lệ} &
+      -- \textbf{Sai mã hẹn hoặc lịch đã hủy:} Hệ thống thông báo không thể check-in. \newline
+      -- \textbf{Thiếu hoặc sai định dạng chỉ số đo:} Giao diện nhắc điều dưỡng kiểm tra lại trước khi lưu. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{table}[H]
+  \centering
+  \caption{Đặc tả UC-03: Khám bệnh, Kê đơn cảnh báo dị ứng và Đặt lịch tái khám}
+  \begin{tabularx}{\textwidth}{@{}l X@{}}
+    \toprule
+    \textbf{Thành phần} & \textbf{Mô tả nghiệp vụ} \\
+    \midrule
+    \textbf{Tên Use Case} & UC-03: Thăm khám lâm sàng, Kê đơn thuốc cảnh báo dị ứng và Đặt lịch tái khám \\
+    \textbf{Tác nhân} & Bác sĩ \\
+    \textbf{Mô tả tóm tắt} & Bác sĩ gọi bệnh nhân theo STT, xem sinh hiệu và tiền sử dị ứng, lập bệnh án, kê đơn thuốc có cảnh báo xung đột dị ứng tự động, phát hành hóa đơn và hẹn tái khám. \\
+    \textbf{Điều kiện tiên quyết} & Bác sĩ đã đăng nhập; có bệnh nhân đang chờ khám trong danh sách buổi hiện tại. \\
+    \textbf{Kết quả sau thực hiện} & Hồ sơ bệnh án, đơn thuốc, hóa đơn viện phí/tiền thuốc được lưu đồng bộ; bệnh nhân nhận được thông báo kết quả khám. \\
+    \textbf{Luồng sự kiện chính} &
+      1. Bác sĩ bấm \textbf{Gọi số tiếp theo} để mời bệnh nhân vào khám. \newline
+      2. Màn hình hiển thị thông tin bệnh nhân, cảnh báo dị ứng nổi bật, chỉ số sinh hiệu từ điều dưỡng và lịch sử các lần khám trước. \newline
+      3. Bác sĩ ghi nhận triệu chứng, chẩn đoán, mã bệnh, kết quả chuyên khoa và chỉ định dịch vụ cận lâm sàng. \newline
+      4. Khi bác sĩ thêm thuốc vào đơn, hệ thống tự động đối chiếu với danh sách dị ứng và bệnh nền của bệnh nhân; nếu có nguy cơ sẽ hiện cảnh báo đỏ ngay lập tức. \newline
+      5. Bác sĩ bấm \textbf{Công bố kết quả \& Đơn thuốc}: hệ thống lưu bệnh án, tạo hóa đơn tương ứng, gửi thông báo cho bệnh nhân và hoàn tất lượt khám. \newline
+      6. Nếu cần, bác sĩ chọn ngày và buổi tái khám để cấp luôn STT mới cho lần hẹn sau. \\
+    \textbf{Trường hợp ngoại lệ} &
+      -- \textbf{Thuốc có nguy cơ gây dị ứng:} Hệ thống cảnh báo rõ tên dị nguyên trùng khớp để bác sĩ đổi thuốc an toàn hơn. \newline
+      -- \textbf{Ngày tái khám bác sĩ không trực hoặc đã đầy:} Hệ thống thông báo để chọn ngày/buổi khác. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{table}[H]
+  \centering
+  \caption{Đặc tả UC-04: Thanh toán viện phí / đơn thuốc và Xác nhận thu ngân}
+  \begin{tabularx}{\textwidth}{@{}l X@{}}
+    \toprule
+    \textbf{Thành phần} & \textbf{Mô tả nghiệp vụ} \\
+    \midrule
+    \textbf{Tên Use Case} & UC-04: Thanh toán hóa đơn viện phí / đơn thuốc và Xác nhận thu ngân -- cấp phát thuốc \\
+    \textbf{Tác nhân} & Bệnh nhân, Điều dưỡng \\
+    \textbf{Mô tả tóm tắt} & Bệnh nhân thực hiện thanh toán qua chuyển khoản QR mô phỏng hoặc đăng ký đóng tiền mặt; điều dưỡng kiểm tra đối soát xác nhận thu tiền và thực hiện cấp phát thuốc. \\
+    \textbf{Điều kiện tiên quyết} & Hóa đơn viện phí hoặc đơn thuốc đã được tạo ở trạng thái chưa thanh toán. \\
+    \textbf{Kết quả sau thực hiện} & Hóa đơn chuyển sang đã thanh toán, mở khóa trạng thái đơn thuốc để cấp phát, trừ tồn kho thuốc và gửi thông báo biên lai cho bệnh nhân. \\
+    \textbf{Luồng sự kiện chính} &
+      1. Bệnh nhân vào mục \textbf{Thanh toán} để xem chi tiết từng hóa đơn (phí khám/dịch vụ tách riêng với tiền thuốc). \newline
+      2. Bệnh nhân chọn quét mã QR chuyển khoản (chuyển sang chờ đối soát) hoặc chọn đóng tiền mặt tại quầy. \newline
+      3. Điều dưỡng/thu ngân kiểm tra giao dịch trên màn hình Thu ngân và bấm \textbf{Xác nhận thanh toán}. \newline
+      4. Hệ thống cập nhật đồng bộ trạng thái thanh toán của hóa đơn, đơn thuốc và gửi thông báo xác nhận cho bệnh nhân. \newline
+      5. Điều dưỡng giao thuốc cho người bệnh và xác nhận đã cấp phát trên hệ thống (tự động trừ số lượng tồn kho). \\
+    \textbf{Trường hợp ngoại lệ} &
+      -- \textbf{Giao dịch chuyển khoản không hợp lệ:} Điều dưỡng có thể bấm từ chối để đưa hóa đơn về trạng thái chưa thanh toán. \newline
+      -- \textbf{Đơn thuốc chưa thanh toán hoặc thuốc hết tồn kho:} Hệ thống ngăn không cho cấp phát và thông báo rõ lý do. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{table}[H]
+  \centering
+  \caption{Đặc tả UC-05: Điều phối giường bệnh nội trú và Thống kê điều hành}
+  \begin{tabularx}{\textwidth}{@{}l X@{}}
+    \toprule
+    \textbf{Thành phần} & \textbf{Mô tả nghiệp vụ} \\
+    \midrule
+    \textbf{Tên Use Case} & UC-05: Điều phối giường bệnh nội trú và Theo dõi thống kê điều hành bệnh viện \\
+    \textbf{Tác nhân} & Điều dưỡng, Trưởng bệnh viện \\
+    \textbf{Mô tả tóm tắt} & Điều dưỡng cập nhật tình trạng xếp giường, chuyển giường, xuất viện theo khoa; mọi thay đổi tự động cập nhật lên biểu đồ công suất giường và các thống kê của Trưởng bệnh viện. \\
+    \textbf{Điều kiện tiên quyết} & Danh mục khoa, phòng và giường bệnh đã được khởi tạo; người dùng có quyền Điều dưỡng hoặc Trưởng bệnh viện. \\
+    \textbf{Kết quả sau thực hiện} & Tình trạng giường và lịch sử sử dụng giường được lưu chính xác; bảng điều khiển của Trưởng bệnh viện hiển thị số liệu thời gian thực. \\
+    \textbf{Luồng sự kiện chính} &
+      1. Điều dưỡng mở màn hình \textbf{Quản lý Giường bệnh}, chọn giường trống để nhập viện cho bệnh nhân, chuyển sang giường khác hoặc làm thủ tục xuất viện trả giường trống. \newline
+      2. Trưởng bệnh viện mở trang \textbf{Tổng quan bệnh viện}: hệ thống tổng hợp lượt khám trong ngày, biểu đồ so sánh 7 ngày qua với 7 ngày trước, danh sách bác sĩ đang trực, bảng lịch hẹn hôm nay, tỷ lệ giường đang sử dụng theo khoa và doanh thu. \newline
+      3. Trưởng bệnh viện có thể lọc lịch hẹn hoặc xuất báo cáo CSV phục vụ họp giao ban. \\
+    \textbf{Trường hợp ngoại lệ} &
+      -- \textbf{Xếp bệnh nhân vào giường đang có người hoặc đang bảo trì:} Hệ thống từ chối và yêu cầu chọn giường trống khác. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{Sơ đồ hoạt động và Sơ đồ tuần tự}
+
+\subsection{Sơ đồ hoạt động: Quy trình khám chữa bệnh khép kín tại An Tâm}
+
+\begin{figure}[H]
+  \centering
+  \resizebox{!}{0.76\textheight}{%
+  \begin{tikzpicture}[node distance=0.65cm and 1.2cm]
+    \node[terminator] (start) {Bắt đầu};
+    \node[decision, below=0.5cm of start] (mode) {Hình thức đến khám?};
+
+    \node[whitebox, text width=3.8cm, below left=0.6cm and 1.2cm of mode] (flow) {Chọn theo Chuyên khoa,\\Bác sĩ hoặc Ngày};
+    \node[box, text width=3.8cm, below=0.45cm of flow] (session) {Chọn Bác sĩ và Buổi Sáng/Chiều};
+    \node[box, text width=3.8cm, below=0.45cm of session] (stt) {Hệ thống cấp STT và Mã hẹn};
+    \node[box, text width=3.8cm, below=0.45cm of stt] (checkin) {Đến viện $\rightarrow$ Điều dưỡng Check-in};
+
+    \node[box, text width=3.8cm, below right=0.6cm and 1.2cm of mode] (walkin) {Điều dưỡng đăng ký tại quầy\\và cấp STT kế tiếp};
+
+    \node[box, text width=5.4cm, below=0.7cm of checkin, xshift=3.1cm] (triage) {Đo sinh hiệu \& Kiểm tra thủ tục BHYT};
+    \node[box, text width=5.4cm, below=0.45cm of triage] (queue) {Chờ gọi tại phòng khám theo STT};
+    \node[box, text width=5.4cm, below=0.45cm of queue] (call) {Bác sĩ gọi số tiếp theo \& Thăm khám};
+    \node[box, text width=5.4cm, below=0.45cm of call] (presc) {Kê đơn thuốc};
+    \node[decision, below=0.5cm of presc] (allergy) {Trùng dị ứng?};
+    \node[whitebox, draw=red!70!black, text width=3.4cm, right=1.3cm of allergy] (warn) {Hiện cảnh báo đỏ\\$\rightarrow$ Đổi thuốc khác};
+
+    \node[box, text width=5.4cm, below=0.6cm of allergy] (pub) {Công bố kết quả, Lập hóa đơn \& Thông báo};
+    \node[box, text width=5.4cm, below=0.45cm of pub] (pay) {Thanh toán QR hoặc Tiền mặt};
+    \node[box, text width=5.4cm, below=0.45cm of pay] (conf) {Điều dưỡng xác nhận thu tiền \& Phát thuốc};
+    \node[decision, below=0.5cm of conf] (next) {Bước tiếp theo?};
+
+    \node[whitebox, text width=3.1cm, below left=0.6cm and 1.2cm of next] (re) {Đặt lịch tái khám\\(Cấp STT mới)};
+    \node[whitebox, text width=3.1cm, below right=0.6cm and 1.2cm of next] (admit) {Điều dưỡng xếp giường\\nội trú theo khoa};
+    \node[terminator, below=1.8cm of next] (done) {Kết thúc lượt khám};
+
+    \draw[flow] (start) -- (mode);
+    \draw[flow] (mode) -| node[above,pos=0.25,font=\footnotesize] {Đặt trước} (flow);
+    \draw[flow] (flow) -- (session);
+    \draw[flow] (session) -- (stt);
+    \draw[flow] (stt) -- (checkin);
+    \draw[flow] (mode) -| node[above,pos=0.25,font=\footnotesize] {Đến trực tiếp} (walkin);
+    \draw[flow] (checkin.south) |- (triage.west);
+    \draw[flow] (walkin.south) |- (triage.east);
+    \draw[flow] (triage) -- (queue);
+    \draw[flow] (queue) -- (call);
+    \draw[flow] (call) -- (presc);
+    \draw[flow] (presc) -- (allergy);
+    \draw[flow] (allergy) -- node[above,font=\footnotesize] {Có} (warn);
+    \draw[flow] (warn.north) |- (presc.east);
+    \draw[flow] (allergy) -- node[right,font=\footnotesize] {Không} (pub);
+    \draw[flow] (pub) -- (pay);
+    \draw[flow] (pay) -- (conf);
+    \draw[flow] (conf) -- (next);
+    \draw[flow] (next) -| node[above,pos=0.25,font=\footnotesize] {Tái khám} (re);
+    \draw[flow] (next) -| node[above,pos=0.25,font=\footnotesize] {Nhập viện} (admit);
+    \draw[flow] (next) -- node[right,pos=0.35,font=\footnotesize] {Hoàn tất} (done);
+    \draw[flow] (re.south) |- (done.west);
+    \draw[flow] (admit.south) |- (done.east);
+  \end{tikzpicture}%
+  }
+  \caption{Sơ đồ hoạt động quy trình khám chữa bệnh khép kín tại An Tâm}
+  \label{fig:activity-full}
+\end{figure}
+
+\subsection{Sơ đồ tuần tự: Đặt lịch khám theo buổi và Cấp STT}
+
+\begin{figure}[H]
+  \centering
+  \resizebox{0.92\textwidth}{!}{%
+  \begin{tikzpicture}
+    \node[actor] (P) at (0,0) {Bệnh nhân};
+    \node[actor] (S) at (9.5,0) {Hệ thống An Tâm};
+
+    \draw[dashed, color=inkMuted] (0,-0.45) -- (0,-8.1);
+    \draw[dashed, color=inkMuted] (9.5,-0.45) -- (9.5,-8.1);
+
+    \draw[flow] (0,-1.1) -- node[above,font=\footnotesize] {1. Chọn cách đặt lịch (Chuyên khoa / Bác sĩ / Ngày)} (9.5,-1.1);
+    \draw[dashflow] (9.5,-1.85) -- node[above,font=\footnotesize] {2. Hiển thị danh sách bác sĩ, buổi Sáng/Chiều và số lượt trống} (0,-1.85);
+    \draw[flow] (0,-2.65) -- node[above,font=\footnotesize] {3. Chọn bác sĩ, ngày, buổi khám, nhập lý do và Xác nhận} (9.5,-2.65);
+    \draw[flow] (9.5,-3.25) -- ++(1.1,0) -- ++(0,-0.6) node[right,pos=0.5,font=\footnotesize,align=left] {4. Kiểm tra còn lượt\\và chưa đặt trùng buổi} -- (9.5,-3.85);
+
+    % alt frame
+    \draw[draw=antamBorder, thick] (-0.8,-4.2) rectangle (13.4,-7.9);
+    \node[fill=antamSoft, font=\footnotesize\bfseries, anchor=north west] at (-0.8,-4.2) {alt};
+    \node[font=\footnotesize\itshape, anchor=west] at (0.2,-4.5) {[Buổi khám đã đủ lượt hoặc bị trùng lịch]};
+    \draw[dashflow] (9.5,-5.25) -- node[above,font=\footnotesize] {5a. Thông báo buổi đã đầy hoặc lịch trùng, gợi ý chọn buổi khác} (0,-5.25);
+    \draw[dashed, color=antamBorder] (-0.8,-5.65) -- (13.4,-5.65);
+    \node[font=\footnotesize\itshape, anchor=west] at (0.2,-5.95) {[Hợp lệ và còn lượt]};
+    \draw[flow] (9.5,-6.2) -- ++(1.1,0) -- ++(0,-0.6) node[right,pos=0.5,font=\footnotesize,align=left] {5b. Cấp STT kế tiếp\\và tính giờ dự kiến} -- (9.5,-6.8);
+    \draw[dashflow] (9.5,-7.5) -- node[above,font=\footnotesize] {6. Hiển thị phiếu hẹn kèm STT, mã check-in và gửi thông báo} (0,-7.5);
+  \end{tikzpicture}%
+  }
+  \caption{Sơ đồ tuần tự nghiệp vụ Đặt lịch khám theo buổi và Cấp STT}
+  \label{fig:seq-book}
+\end{figure}
+
+\subsection{Sơ đồ tuần tự: Khám bệnh, Cảnh báo dị ứng và Công bố kết quả}
+
+\begin{figure}[H]
+  \centering
+  \resizebox{0.94\textwidth}{!}{%
+  \begin{tikzpicture}
+    \node[actor] (D) at (0,0) {Bác sĩ};
+    \node[actor] (S) at (7.5,0) {Hệ thống An Tâm};
+    \node[actor] (P) at (13.8,0) {Bệnh nhân};
+
+    \draw[dashed, color=inkMuted] (0,-0.45) -- (0,-7.65);
+    \draw[dashed, color=inkMuted] (7.5,-0.45) -- (7.5,-7.65);
+    \draw[dashed, color=inkMuted] (13.8,-0.45) -- (13.8,-7.65);
+
+    \draw[flow] (0,-1.05) -- node[above,font=\footnotesize] {1. Bấm Gọi số tiếp theo theo STT} (7.5,-1.05);
+    \draw[dashflow] (7.5,-1.75) -- node[above,font=\footnotesize] {2. Hiển thị hồ sơ, sinh hiệu và tiền sử dị ứng} (0,-1.75);
+    \draw[flow] (0,-2.45) -- node[above,font=\footnotesize] {3. Ghi chẩn đoán, chỉ định xét nghiệm và chọn thuốc} (7.5,-2.45);
+    \draw[flow] (7.5,-2.95) -- ++(1.0,0) -- ++(0,-0.55) node[right,pos=0.5,font=\footnotesize,align=left] {4. Đối chiếu thuốc với\\dị ứng và bệnh nền} -- (7.5,-3.5);
+
+    \draw[draw=antamBorder, thick] (-0.7,-3.75) rectangle (10.6,-5.15);
+    \node[fill=antamSoft, font=\footnotesize\bfseries, anchor=north west] at (-0.7,-3.75) {opt};
+    \node[font=\footnotesize\itshape, anchor=west] at (0.3,-4.05) {[Phát hiện thuốc có nguy cơ gây dị ứng]};
+    \draw[dashflow] (7.5,-4.85) -- node[above,font=\footnotesize] {5. Hiện cảnh báo đỏ để bác sĩ đổi thuốc an toàn} (0,-4.85);
+
+    \draw[flow] (0,-5.75) -- node[above,font=\footnotesize] {6. Bấm Công bố kết quả khám \& Đơn thuốc} (7.5,-5.75);
+    \draw[flow] (7.5,-6.05) -- ++(1.0,0) -- ++(0,-0.55) node[right,pos=0.5,font=\footnotesize,align=left] {7. Lưu bệnh án, lập\\hóa đơn \& hoàn tất} -- (7.5,-6.6);
+    \draw[dashflow] (7.5,-7.35) -- node[above,font=\footnotesize] {8a. Mở tùy chọn Hẹn tái khám} (0,-7.35);
+    \draw[dashflow] (7.5,-7.35) -- node[above,font=\footnotesize] {8b. Gửi thông báo kết quả \& đơn thuốc} (13.8,-7.35);
+  \end{tikzpicture}%
+  }
+  \caption{Sơ đồ tuần tự nghiệp vụ Khám bệnh, Cảnh báo dị ứng và Công bố kết quả}
+  \label{fig:seq-exam}
+\end{figure}
+
+\subsection{Sơ đồ tuần tự: Thanh toán và Xác nhận cấp phát thuốc}
+
+\begin{figure}[H]
+  \centering
+  \resizebox{0.94\textwidth}{!}{%
+  \begin{tikzpicture}
+    \node[actor] (P) at (0,0) {Bệnh nhân};
+    \node[actor] (S) at (7.0,0) {Hệ thống An Tâm};
+    \node[actor] (N) at (13.8,0) {Điều dưỡng / Thu ngân};
+
+    \draw[dashed, color=inkMuted] (0,-0.45) -- (0,-6.9);
+    \draw[dashed, color=inkMuted] (7.0,-0.45) -- (7.0,-6.9);
+    \draw[dashed, color=inkMuted] (13.8,-0.45) -- (13.8,-6.9);
+
+    \draw[flow] (0,-1.05) -- node[above,font=\footnotesize] {1. Chọn hóa đơn viện phí hoặc đơn thuốc} (7.0,-1.05);
+    \draw[flow] (0,-1.7) -- node[above,font=\footnotesize] {2. Chọn phương thức (QR hoặc Tiền mặt)} (7.0,-1.7);
+    \draw[dashflow] (7.0,-2.35) -- node[above,font=\footnotesize] {3. Hiển thị mã QR / ghi nhận chờ xác nhận} (0,-2.35);
+
+    \draw[flow] (13.8,-3.1) -- node[above,font=\footnotesize] {4. Kiểm tra và bấm Xác nhận thanh toán} (7.0,-3.1);
+    \draw[flow] (7.0,-3.5) -- ++(-1.0,0) -- ++(0,-0.55) node[left,pos=0.5,font=\footnotesize,align=right] {5. Cập nhật Đã thanh toán\\\& mở khóa đơn thuốc} -- (7.0,-4.05);
+    \draw[dashflow] (7.0,-4.9) -- node[above,font=\footnotesize] {6a. Gửi thông báo biên lai} (0,-4.9);
+    \draw[dashflow] (7.0,-4.9) -- node[above,font=\footnotesize] {6b. Cho phép cấp phát thuốc} (13.8,-4.9);
+    \draw[flow] (13.8,-5.75) -- node[above,font=\footnotesize] {7. Xác nhận đã giao thuốc cho bệnh nhân} (7.0,-5.75);
+    \draw[dashflow] (7.0,-6.45) -- node[above,font=\footnotesize] {8. Hoàn tất cấp phát và trừ tồn kho thuốc} (13.8,-6.45);
+  \end{tikzpicture}%
+  }
+  \caption{Sơ đồ tuần tự nghiệp vụ Thanh toán và Xác nhận cấp phát thuốc}
+  \label{fig:seq-pay}
+\end{figure}
+
+% ==================== CHUONG 3 ====================
+\chapter{Thiết kế Kiến trúc và Cơ sở dữ liệu}
+
+\section{Kiến trúc tổng thể hệ thống}
+
+Hệ thống được tổ chức theo mô hình 3 tầng rõ ràng (Hình~\ref{fig:arch-3tier}):
+\begin{enumerate}
+  \item \textbf{Tầng Giao diện:} Hiển thị trực quan cho từng vai trò, hỗ trợ cả máy tính và điện thoại. Mọi phép tính quan trọng (cấp số thứ tự, kiểm tra dị ứng thuốc, tổng tiền hóa đơn, đối soát thu tiền) đều được xử lý ở máy chủ để bảo đảm an toàn.
+  \item \textbf{Tầng Xử lý Nghiệp vụ:} Kiểm tra danh tính và vai trò trước mọi thao tác; các bước lưu nhiều bảng cùng lúc (như công bố bệnh án kèm sinh hóa đơn, xác nhận thanh toán kèm mở khóa đơn thuốc) được thực hiện trọn gói trong một giao dịch.
+  \item \textbf{Tầng Dữ liệu:} Sử dụng PostgreSQL 16 với 17 bảng nghiệp vụ kết hợp 12 cột JSONB giúp cấu trúc gọn nhẹ mà vẫn bảo đảm tính chặt chẽ và toàn vẹn dữ liệu.
+\end{enumerate}
+
+\begin{figure}[H]
+  \centering
+  \resizebox{0.96\textwidth}{!}{%
+  \begin{tikzpicture}[node distance=0.45cm]
+    % Layer 1
+    \node[whitebox, text width=3.8cm] (c1) {Trang Đăng nhập \& Tra cứu};
+    \node[whitebox, text width=3.8cm, below=0.3cm of c1] (c2) {Cổng Bệnh nhân (Mobile/Web)};
+    \node[whitebox, text width=3.8cm, below=0.3cm of c2] (c3) {Cổng Bác sĩ};
+    \node[whitebox, text width=3.8cm, below=0.3cm of c3] (c4) {Cổng Điều dưỡng};
+    \node[whitebox, text width=3.8cm, below=0.3cm of c4] (c5) {Cổng Trưởng bệnh viện};
+    \begin{pgfonlayer}{background}
+      \node[groupbox, fit=(c1)(c5), label={[font=\footnotesize\bfseries,color=antamNavy]above:Tầng Giao diện (React + Tailwind)}] (L1) {};
+    \end{pgfonlayer}
+
+    % Layer 2
+    \node[box, text width=4.3cm, right=1.8cm of c1] (a1) {Kiểm tra đăng nhập \& Phân quyền};
+    \node[box, text width=4.3cm, below=0.3cm of a1] (a2) {Xử lý Đặt lịch \& Cấp STT};
+    \node[box, text width=4.3cm, below=0.3cm of a2] (a3) {Xử lý Khám bệnh \& Dị ứng};
+    \node[box, text width=4.3cm, below=0.3cm of a3] (a4) {Xử lý Thanh toán \& Phát thuốc};
+    \node[box, text width=4.3cm, below=0.3cm of a4] (a5) {Xử lý Giường bệnh \& Thống kê};
+    \begin{pgfonlayer}{background}
+      \node[groupbox, fit=(a1)(a5), label={[font=\footnotesize\bfseries,color=antamNavy]above:Tầng Nghiệp vụ (Node.js + Express)}] (L2) {};
+    \end{pgfonlayer}
+
+    % Layer 3
+    \node[whitebox, text width=4.1cm, right=1.8cm of a2] (d1) {17 Bảng quan hệ chuẩn hóa};
+    \node[whitebox, text width=4.1cm, below=0.45cm of d1] (d2) {12 Cột JSONB linh hoạt\\+ Chỉ mục tìm kiếm nhanh};
+    \node[whitebox, text width=4.1cm, below=0.45cm of d2] (d3) {Khóa chống trùng STT\\\& Toàn vẹn giao dịch};
+    \begin{pgfonlayer}{background}
+      \node[groupbox, fit=(d1)(d3), label={[font=\footnotesize\bfseries,color=antamNavy]above:Tầng Dữ liệu (PostgreSQL 16)}] (L3) {};
+    \end{pgfonlayer}
+
+    \draw[flow] (L1.east) -- node[above,font=\scriptsize] {JSON bảo mật} (L2.west);
+    \draw[flow] (L2.east) -- node[above,font=\scriptsize] {Prisma} (L3.west);
+  \end{tikzpicture}%
+  }
+  \caption{Kiến trúc 3 tầng của hệ thống Bệnh viện An Tâm}
+  \label{fig:arch-3tier}
+\end{figure}
+
+\section{Sơ đồ Thực thể -- Liên kết (ERD) theo phân hệ}
+
+Để dễ quan sát, đối chiếu và trình bày báo cáo, sơ đồ ERD của 17 bảng dữ liệu được chia thành 4 sơ đồ theo từng phân hệ nghiệp vụ (Hình~\ref{fig:erd-1} đến Hình~\ref{fig:erd-4}).
+
+\begin{figure}[H]
+  \centering
+  \resizebox{0.96\textwidth}{!}{%
+  \begin{tikzpicture}
+    \node[erd] (users) at (0,0) {\erdnode{users}{
+      \textbf{PK} id \\
+      \textbf{UK} email \\
+      full\_name, phone, role
+    }};
+    \node[erd] (patients) at (-5.2,-3.0) {\erdnode{patients}{
+      \textbf{PK} id, \textbf{FK} user\_id \\
+      \textbf{UK} patient\_code \\
+      allergies (JSON), chronic\_conditions (JSON)
+    }};
+    \node[erd] (doctors) at (0,-3.0) {\erdnode{doctors}{
+      \textbf{PK} id, \textbf{FK} user\_id \\
+      \textbf{UK} doctor\_code \\
+      specialty, consultation\_fee, is\_on\_duty
+    }};
+    \node[erd] (nurses) at (5.0,-3.0) {\erdnode{nurses}{
+      \textbf{PK} id, \textbf{FK} user\_id \\
+      \textbf{UK} nurse\_code, shift
+    }};
+    \node[erd] (noti) at (-4.8,2.5) {\erdnode{notifications}{
+      \textbf{PK} id, \textbf{FK} user\_id \\
+      title, type, payload (JSON), is\_read
+    }};
+    \node[erd] (audit) at (4.8,2.5) {\erdnode{audit\_logs}{
+      \textbf{PK} id, \textbf{FK} actor\_user\_id \\
+      action, entity\_type, metadata (JSON)
+    }};
+
+    \draw[flow] (users.south west) -- node[left,font=\scriptsize] {1--0..1} (patients.north);
+    \draw[flow] (users.south) -- node[right,font=\scriptsize] {1--0..1} (doctors.north);
+    \draw[flow] (users.south east) -- node[right,font=\scriptsize] {1--0..1} (nurses.north);
+    \draw[flow] (users.north west) -- node[left,font=\scriptsize] {1--N} (noti.south);
+    \draw[flow] (users.north east) -- node[right,font=\scriptsize] {1--N} (audit.south);
+  \end{tikzpicture}%
+  }
+  \caption{ERD Phân hệ 1: Tài khoản, Hồ sơ người dùng và Thông báo}
+  \label{fig:erd-1}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \resizebox{0.96\textwidth}{!}{%
+  \begin{tikzpicture}
+    \node[erd] (dept) at (0,0) {\erdnode{departments}{
+      \textbf{PK} id, \textbf{UK} code \\
+      name, consultation\_fee
+    }};
+    \node[erd] (rooms) at (-5.4,-2.5) {\erdnode{rooms}{
+      \textbf{PK} id, \textbf{UK} code \\
+      name, room\_type, \textbf{FK} department\_id
+    }};
+    \node[erd] (beds) at (0,-5.3) {\erdnode{beds}{
+      \textbf{PK} id, \textbf{UK} bed\_number \\
+      \textbf{FK} room\_id, \textbf{FK} department\_id \\
+      status, \textbf{FK} current\_patient\_id \\
+      assignment\_history (JSON)
+    }};
+    \node[erd] (doctors) at (5.6,-2.5) {\erdnode{doctors}{
+      \textbf{PK} id, \textbf{FK} department\_id \\
+      \textbf{FK} room\_id, specialty
+    }};
+    \node[erd] (nurses) at (5.6,0.3) {\erdnode{nurses}{
+      \textbf{PK} id, \textbf{FK} department\_id \\
+      shift
+    }};
+    \node[erd] (patients) at (-5.4,-5.3) {\erdnode{patients}{
+      \textbf{PK} id, \textbf{UK} patient\_code
+    }};
+
+    \draw[flow] (dept.south west) -- node[left,font=\scriptsize] {1--N} (rooms.north);
+    \draw[flow] (dept.south) -- node[right,pos=0.28,font=\scriptsize] {1--N} (beds.north);
+    \draw[flow] (dept.south east) -- node[right,font=\scriptsize] {1--N} (doctors.north);
+    \draw[flow] (dept.east) -- node[above,font=\scriptsize] {1--N} (nurses.west);
+    \draw[flow] (rooms.south) -- node[left,font=\scriptsize] {1--N} (beds.north west);
+    \draw[flow] (rooms.east) -- node[above,pos=0.72,font=\scriptsize] {trực tại phòng} (doctors.west);
+    \draw[flow] (patients.east) -- node[above,font=\scriptsize] {1--0..1} (beds.west);
+  \end{tikzpicture}%
+  }
+  \caption{ERD Phân hệ 2: Tổ chức Khoa, Phòng khám và Giường bệnh}
+  \label{fig:erd-2}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \resizebox{0.96\textwidth}{!}{%
+  \begin{tikzpicture}
+    \node[erd] (sched) at (0,0) {\erdnode{doctor\_schedules}{
+      \textbf{PK} id, \textbf{FK} doctor\_id \\
+      schedule\_date, session, max\_patients \\
+      last\_queue\_number, is\_available
+    }};
+    \node[erd] (appt) at (0,-3.2) {\erdnode{appointments}{
+      \textbf{PK} id, \textbf{UK} appointment\_code \\
+      \textbf{FK} patient\_id, doctor\_id, department\_id, schedule\_id \\
+      appointment\_date, session, queue\_number, status \\
+      triage\_data (JSON)
+    }};
+    \node[erd] (rec) at (0,-6.5) {\erdnode{medical\_records}{
+      \textbf{PK} id, \textbf{UK} record\_code, \textbf{FK} appointment\_id \\
+      \textbf{FK} patient\_id, \textbf{FK} doctor\_id \\
+      diagnosis, icd\_code, specialty\_results (JSON)
+    }};
+    \node[erd] (rx) at (7.8,-6.5) {\erdnode{prescriptions}{
+      \textbf{PK} id, \textbf{UK} prescription\_code \\
+      \textbf{FK} medical\_record\_id, patient\_id, doctor\_id \\
+      items (JSON), allergy\_warnings (JSON), total\_amount
+    }};
+    \node[erd] (doc) at (7.8,0) {\erdnode{doctors}{
+      \textbf{PK} id, \textbf{UK} doctor\_code
+    }};
+    \node[erd] (pat) at (-6.8,-3.2) {\erdnode{patients}{
+      \textbf{PK} id, \textbf{UK} patient\_code
+    }};
+
+    \draw[flow] (doc.west) -- node[above,font=\scriptsize] {1--N} (sched.east);
+    \draw[flow] (sched.south) -- node[right,font=\scriptsize] {1--N (cấp STT)} (appt.north);
+    \draw[flow] (doc.south) -- node[right,font=\scriptsize] {1--N} (appt.east);
+    \draw[flow] (pat.east) -- node[above,font=\scriptsize] {1--N} (appt.west);
+    \draw[flow] (appt.south) -- node[right,font=\scriptsize] {1--0..1} (rec.north);
+    \draw[flow] (pat.south) |- node[left,pos=0.3,font=\scriptsize] {1--N} (rec.west);
+    \draw[flow] (rec.east) -- node[above,font=\scriptsize] {1--0..1} (rx.west);
+  \end{tikzpicture}%
+  }
+  \caption{ERD Phân hệ 3: Lịch trực, Đặt lịch (STT) và Khám chữa bệnh}
+  \label{fig:erd-3}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \resizebox{0.96\textwidth}{!}{%
+  \begin{tikzpicture}
+    \node[erd] (inv) at (0,0) {\erdnode{invoices}{
+      \textbf{PK} id, \textbf{UK} invoice\_code \\
+      \textbf{FK} patient\_id, appointment\_id, prescription\_id \\
+      invoice\_type, items (JSON), total\_amount, status
+    }};
+    \node[erd] (pay) at (7.4,0) {\erdnode{payments}{
+      \textbf{PK} id, \textbf{UK} payment\_code \\
+      \textbf{FK} invoice\_id, \textbf{FK} patient\_id \\
+      amount, method, status, \textbf{FK} confirmed\_by\_nurse\_id
+    }};
+    \node[erd] (rx) at (0,-3.6) {\erdnode{prescriptions}{
+      \textbf{PK} id, \textbf{UK} prescription\_code \\
+      status, \textbf{FK} dispensed\_by\_nurse\_id
+    }};
+    \node[erd] (nur) at (7.4,-3.6) {\erdnode{nurses}{
+      \textbf{PK} id, \textbf{UK} nurse\_code
+    }};
+    \node[erd] (med) at (-7.0,-3.6) {\erdnode{medicines}{
+      \textbf{PK} id, \textbf{UK} code, name \\
+      unit\_price, stock\_quantity \\
+      contraindications (JSON)
+    }};
+    \node[erd] (svc) at (-7.0,0) {\erdnode{services}{
+      \textbf{PK} id, \textbf{UK} code, name \\
+      category, unit\_price, \textbf{FK} department\_id
+    }};
+
+    \draw[flow] (inv.east) -- node[above,font=\scriptsize] {1--N} (pay.west);
+    \draw[flow] (rx.north) -- node[right,font=\scriptsize] {1--0..1} (inv.south);
+    \draw[flow] (nur.north) -- node[right,font=\scriptsize] {xác nhận} (pay.south);
+    \draw[flow] (nur.west) -- node[above,font=\scriptsize] {cấp phát} (rx.east);
+    \draw[dashflow] (med.east) -- node[above,font=\scriptsize] {tham chiếu} (rx.west);
+    \draw[dashflow] (svc.east) -- node[above,font=\scriptsize] {tham chiếu} (inv.west);
+  \end{tikzpicture}%
+  }
+  \caption{ERD Phân hệ 4: Thanh toán, Cấp phát thuốc và Danh mục Dịch vụ}
+  \label{fig:erd-4}
+\end{figure}
+
+\section{Mô tả chi tiết 17 bảng dữ liệu}
+
+Hệ thống tổ chức cơ sở dữ liệu gồm 17 bảng nghiệp vụ trên PostgreSQL 16, chia thành 5 phân hệ dữ liệu:
+
+\begin{longtable}{@{}p{3.7cm} p{3.5cm} p{7.6cm}@{}}
+  \caption{Mô tả chi tiết 17 bảng dữ liệu trong hệ thống An Tâm} \label{tab:tables} \\
+  \toprule
+  \textbf{Tên bảng} & \textbf{Ý nghĩa} & \textbf{Thông tin chính lưu trữ} \\
+  \midrule
+  \endfirsthead
+  \toprule
+  \textbf{Tên bảng} & \textbf{Ý nghĩa} & \textbf{Thông tin chính lưu trữ} \\
+  \midrule
+  \endhead
+  \bottomrule
+  \endfoot
+  \multicolumn{3}{@{}l}{\textit{\textbf{Nhóm 1: Tài khoản, Tổ chức và Cơ sở vật chất (4 bảng)}}} \\
+  \texttt{users} & Tài khoản đăng nhập & Email, mật khẩu mã hóa, họ tên, số điện thoại, vai trò (Bệnh nhân, Bác sĩ, Điều dưỡng, Quản lý), trạng thái hoạt động. \\
+  \texttt{departments} & Chuyên khoa & Mã khoa, tên khoa (Nội tổng quát, Tim mạch, Nhi khoa, Da liễu, Ngoại khoa...), vị trí, phí khám mặc định. \\
+  \texttt{rooms} & Phòng khám \& Phòng bệnh & Mã phòng, tên phòng (Phòng 201, Phòng 305, Phòng 102...), loại phòng (phòng khám, nội trú, xét nghiệm...), thuộc khoa. \\
+  \texttt{beds} & Giường bệnh nội trú & Số giường, phòng/khoa, trạng thái (Trống, Đang sử dụng, Bảo trì), bệnh nhân đang nằm (tối đa 1 giường/người) và lịch sử điều phối dạng JSON. \\
+  \midrule
+  \multicolumn{3}{@{}l}{\textit{\textbf{Nhóm 2: Hồ sơ người bệnh và Nhân sự (3 bảng)}}} \\
+  \texttt{patients} & Hồ sơ bệnh nhân & Mã bệnh nhân, ngày sinh, giới tính, địa chỉ, CCCD, số BHYT, nhóm máu, danh sách dị ứng (JSON), bệnh nền (JSON), liên hệ khẩn cấp (JSON). \\
+  \texttt{doctors} & Hồ sơ bác sĩ & Mã bác sĩ, chuyên khoa, phòng trực chính, học vị, số năm kinh nghiệm, phí khám, trạng thái đang trực. \\
+  \texttt{nurses} & Hồ sơ điều dưỡng & Mã điều dưỡng, khoa công tác, ca trực. \\
+  \midrule
+  \multicolumn{3}{@{}l}{\textit{\textbf{Nhóm 3: Lịch trực và Đặt lịch khám (2 bảng)}}} \\
+  \texttt{doctor\_schedules} & Lịch trực theo buổi & Bác sĩ, ngày trực, buổi (Sáng/Chiều), giờ bắt đầu--kết thúc, số lượt tối đa, thời lượng khám TB, bộ đếm STT cao nhất đã cấp, trạng thái mở/khóa. \\
+  \texttt{appointments} & Lịch hẹn \& Hàng đợi & Mã lịch hẹn, bệnh nhân, bác sĩ, khoa, ngày khám, buổi, Số thứ tự (STT), giờ dự kiến, hình thức đặt, luồng đặt, trạng thái, lý do khám, dữ liệu Triage của điều dưỡng (JSON). \\
+  \midrule
+  \multicolumn{3}{@{}l}{\textit{\textbf{Nhóm 4: Khám bệnh, Danh mục Thuốc và Dịch vụ (4 bảng)}}} \\
+  \texttt{medical\_records} & Hồ sơ kết quả khám & Mã hồ sơ, gắn với 1 lịch hẹn, triệu chứng, chẩn đoán, mã ICD-10, ghi chú, hướng điều trị, kết quả chuyên khoa \& CLS (JSON), trạng thái. \\
+  \texttt{medicines} & Danh mục thuốc & Mã thuốc, tên thuốc, hoạt chất, đơn vị tính, đơn giá, tồn kho, dạng bào chế, chống chỉ định \& dị nguyên (JSON). \\
+  \texttt{services} & Danh mục dịch vụ & Mã dịch vụ, tên dịch vụ (Khám chuyên khoa, Xét nghiệm máu, Siêu âm, Điện tâm đồ...), đơn giá. \\
+  \texttt{prescriptions} & Đơn thuốc & Mã đơn, gắn với hồ sơ khám, lời dặn, cảnh báo dị ứng (JSON), danh sách chi tiết thuốc đã kê (JSON), tổng tiền, trạng thái thanh toán/cấp phát. \\
+  \midrule
+  \multicolumn{3}{@{}l}{\textit{\textbf{Nhóm 5: Thanh toán, Thông báo và Nhật ký (4 bảng)}}} \\
+  \texttt{invoices} & Hóa đơn & Mã hóa đơn, loại hóa đơn (Viện phí hoặc Đơn thuốc), danh sách khoản thu chi tiết (JSON), tạm tính, miễn giảm BHYT, tổng tiền, trạng thái. \\
+  \texttt{payments} & Giao dịch thanh toán & Mã giao dịch, hóa đơn, số tiền, phương thức (QR hoặc Tiền mặt), trạng thái (Chờ đối soát, Đã xác nhận, Từ chối), điều dưỡng xác nhận. \\
+  \texttt{notifications} & Thông báo & Người nhận, tiêu đề, nội dung, phân loại, dữ liệu đính kèm điều hướng nhanh (JSON), trạng thái đã đọc. \\
+  \texttt{audit\_logs} & Nhật ký hệ thống & Người thao tác, hành động, đối tượng tác động, chi tiết thay đổi (JSON), thời điểm thực hiện. \\
+\end{longtable}
+
+\section{Thiết kế dữ liệu dạng JSON (JSONB)}
+
+Nhờ kiểu dữ liệu JSONB kèm chỉ mục tìm kiếm nhanh của PostgreSQL, hệ thống lưu 12 nhóm thông tin bán cấu trúc dưới dạng JSON ngay trong các bảng chính (Bảng~\ref{tab:jsonb}).
+
+\begin{table}[H]
+  \centering
+  \caption{Tổng hợp các nhóm thông tin lưu trữ dạng JSON (JSONB) và lợi ích thiết kế}
+  \label{tab:jsonb}
+  \begin{tabularx}{\textwidth}{@{}p{4.3cm} X X@{}}
+    \toprule
+    \textbf{Bảng chứa \& Cột JSON} & \textbf{Nội dung lưu bên trong} & \textbf{Lợi ích thiết kế} \\
+    \midrule
+    \texttt{patients}: Dị ứng, Bệnh nền, Liên hệ khẩn cấp & Danh sách dị nguyên kèm mức độ nặng nhẹ; bệnh mạn tính; tên/SĐT người thân. & Dễ mở rộng nhiều mục cho từng bệnh nhân mà vẫn gọn trong một bảng hồ sơ. \\
+    \addlinespace
+    \texttt{appointments}: Dữ liệu sàng lọc Triage & Sinh hiệu (huyết áp, nhịp tim, nhiệt độ, SpO2, chiều cao, cân nặng, BMI), checklist BHYT và tên điều dưỡng đo. & Lưu trọn bộ thông tin sàng lọc 1-1 ngay trên lịch hẹn, truy xuất nhanh khi bác sĩ mở hàng đợi. \\
+    \addlinespace
+    \texttt{medical\_records}: Kết quả chuyên khoa \& CLS & Kết quả khám đặc thù từng khoa và danh sách kết quả xét nghiệm, siêu âm. & Đáp ứng linh hoạt mẫu kết quả khác nhau giữa các chuyên khoa. \\
+    \addlinespace
+    \texttt{medicines}: Chống chỉ định & Danh sách dị nguyên và bệnh nền không được dùng thuốc. & Đối chiếu tự động với hồ sơ dị ứng của bệnh nhân ngay khi kê đơn. \\
+    \addlinespace
+    \texttt{prescriptions}: Danh sách thuốc \& Cảnh báo dị ứng & Chi tiết tên thuốc, đơn giá lúc kê, liều dùng, số ngày, số lượng và cảnh báo dị ứng đã phát hiện. & Đọc trọn bộ đơn thuốc chỉ với một truy vấn và bảo toàn đúng tên/giá thuốc tại thời điểm kê. \\
+    \addlinespace
+    \texttt{invoices}: Chi tiết khoản thu & Từng dòng phí khám, phí xét nghiệm hoặc thuốc trong hóa đơn. & Quản lý chi tiết các mục thu gọn nhẹ trong khi vẫn giữ cột tổng tiền để thống kê doanh thu chính xác. \\
+    \addlinespace
+    \texttt{beds}: Lịch sử điều phối giường & Nhật ký các lần nhập viện, chuyển giường, xuất viện gắn trên từng giường. & Tra cứu trực tiếp lịch sử sử dụng trên từng giường bệnh nội trú. \\
+    \addlinespace
+    \texttt{notifications} \& \texttt{audit\_logs}: Dữ liệu đính kèm & Mã lịch hẹn, STT, mã hóa đơn hoặc thông tin thay đổi khi ghi log. & Hỗ trợ bấm vào thông báo là mở đúng trang chi tiết liên quan. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{Cơ chế chống trùng Số thứ tự (STT) khi đặt lịch đồng thời}
+
+Để xử lý tình huống hai bệnh nhân (hoặc điều dưỡng tại quầy) cùng đặt lịch cho một bác sĩ vào một buổi tại cùng thời điểm, hệ thống áp dụng 2 lớp bảo vệ:
+\begin{enumerate}
+  \item \textbf{Lớp khóa xử lý tuần tự:} Trước khi cấp STT, hệ thống khóa tạm đúng dòng lịch trực của bác sĩ trong buổi đó để các yêu cầu trùng thời điểm tự động xếp hàng xử lý lần lượt, đảm bảo không vượt quá số lượt tối đa và bộ đếm STT tăng liên tiếp không trùng nhau.
+  \item \textbf{Lớp ràng buộc cứng ở cơ sở dữ liệu:} Cơ sở dữ liệu có sẵn quy tắc tự động từ chối nếu xuất hiện 2 lịch hẹn còn hiệu lực (chưa hủy) có cùng bác sĩ, ngày, buổi và trùng STT; đồng thời chặn một bệnh nhân tự đặt 2 lịch còn hiệu lực với cùng bác sĩ trong cùng buổi. Khi người bệnh hủy lịch cũ, quy tắc này tự động cho phép họ đặt lại lịch mới trong buổi đó và nhận STT mới ở cuối hàng đợi.
+\end{enumerate}
+
+% ==================== CHUONG 4 ====================
+\chapter{Thiết kế Giao diện và Trải nghiệm người dùng}
+
+\section{Ngôn ngữ thiết kế (Design System ``An Tâm'')}
+
+Giao diện hệ thống được thiết kế thống nhất theo phong cách y tế hiện đại: sáng sủa, sạch sẽ, độ tương phản rõ nét để nhân viên y tế làm việc liên tục không mỏi mắt và người lớn tuổi dễ đọc trên điện thoại (Bảng~\ref{tab:design-tokens}).
+
+\begin{table}[H]
+  \centering
+  \caption{Bảng quy chuẩn màu sắc và phông chữ của hệ thống An Tâm}
+  \label{tab:design-tokens}
+  \begin{tabularx}{\textwidth}{@{}p{4.3cm} p{3.6cm} X@{}}
+    \toprule
+    \textbf{Thành phần giao diện} & \textbf{Màu sắc / Font} & \textbf{Vai trò và Ý nghĩa} \\
+    \midrule
+    \textbf{Nền trang tổng thể} & Xanh băng nhạt (\texttt{\#EEF4FB}) & Làm nổi bật rõ các khối thẻ nội dung màu trắng phía trên. \\
+    \textbf{Thẻ nội dung \& Bảng} & Trắng (\texttt{\#FFFFFF}), viền \texttt{\#C7D6EA} & Bo góc mềm mại, phân tách rõ ràng từng khu vực thông tin. \\
+    \textbf{Màu xanh chủ đạo} & Xanh y tế đậm (\texttt{\#1D5BB8}) & Dùng cho nút hành động chính, thanh điều hướng đang chọn và biểu đồ chính, bảo đảm độ tương phản chữ trắng rõ nét. \\
+    \textbf{Màu nhấn nhẹ} & Xanh nhạt (\texttt{\#DCEAFB} / \texttt{\#EDF3FB}) & Làm nền cho ô menu đang chọn, thẻ thông báo, khối dịch vụ và đầu bảng dữ liệu. \\
+    \textbf{Màu trạng thái nghiệp vụ} & Xanh lá / Xanh dương / Vàng / Đỏ & Phân biệt trực quan trạng thái: Hoàn thành / Đang trực, Đã xác nhận / Đang khám, Chờ xác nhận, Đã hủy / Cảnh báo dị ứng. \\
+    \textbf{Phông chữ} & Plus Jakarta Sans, Inter & Hỗ trợ đầy đủ dấu tiếng Việt và hiển thị rõ ràng các con số KPI, STT (\texttt{\#01}, \texttt{\#02}). \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+Ngoài ra, giao diện kết quả khám và đơn thuốc hỗ trợ chế độ in ấn (tự động ẩn thanh điều hướng khi bấm in).
+
+\section{Thiết kế thích ứng Desktop và Mobile}
+\begin{itemize}
+  \item \textbf{Trên máy tính (Desktop):} Thanh menu cố định bên trái hiển thị vai trò và các mục chức năng; thanh tiêu đề phía trên hiển thị đường dẫn trang, chuông thông báo (tự cập nhật định kỳ) và menu tài khoản.
+  \item \textbf{Trên điện thoại (Mobile):} Thanh menu bên trái thu gọn thành nút mở ngăn kéo ở góc trên, kết hợp với thanh điều hướng cố định dưới đáy màn hình chứa các mục thao tác chính giúp thao tác thuận tiện bằng một tay.
+\end{itemize}
+
+\section{Bản đồ màn hình và Luồng chuyển trang theo từng vai trò}
+
+Để từng màn hình dễ quan sát trên báo cáo và slide thuyết trình, luồng điều hướng được tách thành sơ đồ phân luồng chung (Hình~\ref{fig:nav-auth}) và sơ đồ riêng cho từng vai trò (Hình~\ref{fig:nav-patient} đến Hình~\ref{fig:nav-admin}).
+
+\begin{figure}[H]
+  \centering
+  \resizebox{0.92\textwidth}{!}{%
+  \begin{tikzpicture}[node distance=0.5cm]
+    \node[terminator] (open) {Mở trang web};
+    \node[decision, right=0.8cm of open] (chk) {Đã đăng nhập?};
+
+    \node[whitebox, text width=3.5cm, above right=0.8cm and 1.2cm of chk] (login) {Trang Đăng nhập\\(có chọn nhanh Demo)};
+    \node[whitebox, text width=3.3cm, right=0.8cm of login] (reg) {Đăng ký Bệnh nhân\\Tra cứu Bác sĩ / Hỗ trợ};
+
+    \node[box, text width=3.2cm, right=1.4cm of chk, yshift=0.3cm] (p) {Cổng Bệnh nhân};
+    \node[box, text width=3.2cm, below=0.25cm of p] (d) {Cổng Bác sĩ};
+    \node[box, text width=3.2cm, below=0.25cm of d] (n) {Cổng Điều dưỡng};
+    \node[box, text width=3.2cm, below=0.25cm of n] (a) {Cổng Quản lý BV};
+
+    \draw[flow] (open) -- (chk);
+    \draw[flow] (chk.north) |- node[above,pos=0.75,font=\footnotesize] {Chưa} (login.west);
+    \draw[flow] (login) -- (reg);
+    \draw[flow] (chk) -- node[above,font=\footnotesize] {Bệnh nhân} (p.west);
+    \draw[flow] (chk.south) |- (d.west);
+    \draw[flow] (chk.south) |- (n.west);
+    \draw[flow] (chk.south) |- (a.west);
+  \end{tikzpicture}%
+  }
+  \caption{Luồng điều hướng Đăng nhập và Phân cổng vai trò}
+  \label{fig:nav-auth}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \begin{minipage}[t]{0.48\textwidth}
+    \centering
+    \resizebox{\linewidth}{!}{%
+    \begin{tikzpicture}
+      \node[box, text width=3.0cm] (home) {Trang chủ \&\\Lịch hẹn sắp tới};
+      \node[whitebox, text width=3.8cm, right=1.0cm of home, yshift=1.8cm] (s1) {Đặt lịch 3 luồng (Buổi \& STT)};
+      \node[whitebox, text width=3.8cm, below=0.22cm of s1] (s2) {Lịch hẹn (xem STT, đổi/hủy)};
+      \node[whitebox, text width=3.8cm, below=0.22cm of s2] (s3) {Hồ sơ sức khỏe \& Dị ứng};
+      \node[whitebox, text width=3.8cm, below=0.22cm of s3] (s4) {Kết quả khám \& Đơn thuốc};
+      \node[whitebox, text width=3.8cm, below=0.22cm of s4] (s5) {Thanh toán (QR / Tại quầy)};
+      \node[whitebox, text width=3.8cm, below=0.22cm of s5] (s6) {Tìm bác sĩ \& Trợ giúp};
+      \foreach \n in {s1,s2,s3,s4,s5,s6} \draw[flow] (home.east) -- (\n.west);
+    \end{tikzpicture}%
+    }
+    \caption{Bản đồ màn hình Cổng Bệnh nhân}
+    \label{fig:nav-patient}
+  \end{minipage}\hfill
+  \begin{minipage}[t]{0.48\textwidth}
+    \centering
+    \resizebox{\linewidth}{!}{%
+    \begin{tikzpicture}
+      \node[box, text width=3.2cm] (dq) {Hàng đợi khám\\theo Buổi \& STT};
+      \node[whitebox, text width=4.0cm, right=1.0cm of dq, yshift=0.7cm] (de) {Phòng khám bệnh\\(Sinh hiệu, Kê đơn, Tái khám)};
+      \node[whitebox, text width=4.0cm, below=0.45cm of de] (ds) {Quản lý Lịch làm việc\\(Bật/tắt buổi, Giới hạn lượt)};
+      \draw[flow] (dq.east) -- (de.west);
+      \draw[flow] (dq.east) -- (ds.west);
+    \end{tikzpicture}%
+    }
+    \caption{Bản đồ màn hình Cổng Bác sĩ}
+    \label{fig:nav-doctor}
+
+    \vspace{0.6cm}
+    \resizebox{\linewidth}{!}{%
+    \begin{tikzpicture}
+      \node[box, text width=3.0cm] (nm) {Điều hướng\\Cổng Điều dưỡng};
+      \node[whitebox, text width=4.1cm, right=1.0cm of nm, yshift=1.0cm] (nr) {Tiếp đón Check-in, Vãng lai\\\& Đo sinh hiệu};
+      \node[whitebox, text width=4.1cm, below=0.25cm of nr] (nc) {Thu ngân xác nhận thanh toán\\\& Cấp phát thuốc};
+      \node[whitebox, text width=4.1cm, below=0.25cm of nc] (nb) {Sơ đồ \& Quản lý Giường bệnh};
+      \foreach \n in {nr,nc,nb} \draw[flow] (nm.east) -- (\n.west);
+    \end{tikzpicture}%
+    }
+    \caption{Bản đồ màn hình Cổng Điều dưỡng}
+    \label{fig:nav-nurse}
+  \end{minipage}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \resizebox{0.78\textwidth}{!}{%
+  \begin{tikzpicture}
+    \node[box, text width=4.2cm] (ad) {Tổng quan bệnh viện\\(KPI, Biểu đồ 7 ngày, Giường)};
+    \node[whitebox, text width=5.0cm, right=1.2cm of ad, yshift=1.0cm] (ao) {Quản lý Lịch hẹn, Bệnh nhân \& Bệnh án};
+    \node[whitebox, text width=5.0cm, below=0.28cm of ao] (ar) {Quản lý Khoa, Phòng, Nhân sự, Thuốc \& DV};
+    \node[whitebox, text width=5.0cm, below=0.28cm of ar] (ap) {Báo cáo thống kê \& Xuất file CSV};
+    \foreach \n in {ao,ar,ap} \draw[flow] (ad.east) -- (\n.west);
+  \end{tikzpicture}%
+  }
+  \caption{Bản đồ màn hình Cổng Trưởng bệnh viện}
+  \label{fig:nav-admin}
+\end{figure}
+
+% ==================== CHUONG 5 ====================
+\chapter{Tổ chức Hệ thống và Triển khai}
+
+\section{Tổ chức mã nguồn dự án}
+
+Dự án được chia tách gọn gàng thành hai phần độc lập nằm chung trong thư mục gốc của hệ thống:
+\begin{itemize}
+  \item \textbf{Thư mục gốc:} Chứa cấu hình khởi chạy Docker (\texttt{docker-compose.yml}), file cấu hình môi trường mẫu, tài liệu hướng dẫn và thư mục báo cáo.
+  \item \textbf{Phần Máy chủ (\texttt{backend/}):} Chứa file định nghĩa 17 bảng dữ liệu và chương trình nạp dữ liệu mẫu (\texttt{prisma/}); nhóm kiểm tra đăng nhập/phân quyền, tiếp nhận yêu cầu theo từng vai trò, xử lý nghiệp vụ cốt lõi (đặt lịch STT, bệnh án \& dị ứng, thanh toán \& phát thuốc, giường bệnh, thống kê) và bộ kiểm thử tự động.
+  \item \textbf{Phần Giao diện (\texttt{frontend/}):} Chứa bộ thành phần giao diện dùng chung, khung bố cục thích ứng Mobile/Desktop, các biểu đồ thống kê và thư mục trang màn hình riêng cho từng vai trò.
+\end{itemize}
+
+\section{Tổng hợp các nhóm chức năng xử lý phía máy chủ}
+
+\begin{table}[H]
+  \centering
+  \caption{Phân nhóm chức năng xử lý theo quyền truy cập}
+  \begin{tabularx}{\textwidth}{@{}p{3.8cm} p{2.8cm} X@{}}
+    \toprule
+    \textbf{Nhóm xử lý} & \textbf{Phạm vi quyền} & \textbf{Các nghiệp vụ đảm nhiệm} \\
+    \midrule
+    \textbf{Xác thực \& Danh mục chung} & Công khai / Đã đăng nhập & Đăng nhập, đăng ký bệnh nhân, xem lịch trống 3 luồng theo buổi, tra cứu bác sĩ/khoa/dịch vụ, nhận và đánh dấu đã đọc thông báo. \\
+    \textbf{Nghiệp vụ Bệnh nhân} & Chỉ Bệnh nhân & Đặt lịch cấp STT, xem danh sách \& STT đang khám, đổi lịch/hủy lịch, cập nhật hồ sơ dị ứng \& bệnh nền, xem bệnh án \& đơn thuốc, khởi tạo thanh toán QR/tiền mặt. \\
+    \textbf{Nghiệp vụ Bác sĩ} & Chỉ Bác sĩ & Xem hàng đợi theo buổi/STT, gọi số tiếp theo, xem hồ sơ \& sinh hiệu, kiểm tra cảnh báo dị ứng, lưu/công bố bệnh án + đơn thuốc + hóa đơn, đặt lịch tái khám, quản lý lịch trực. \\
+    \textbf{Nghiệp vụ Điều dưỡng} & Chỉ Điều dưỡng & Check-in bệnh nhân đặt trước, tạo phiếu vãng lai cấp STT, nhập sinh hiệu \& thủ tục BHYT, đối soát thanh toán, cấp phát thuốc trừ tồn kho, xếp/chuyển/xuất giường bệnh. \\
+    \textbf{Nghiệp vụ Quản lý} & Chỉ Trưởng BV & Tổng hợp Dashboard KPI \& biểu đồ, quản lý Khoa/Phòng/Giường/Nhân sự/Lịch trực/Thuốc/Dịch vụ, tra cứu hồ sơ toàn viện và xuất file báo cáo CSV. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{Dữ liệu mẫu khởi tạo phục vụ chạy thử và trình diễn}
+Khi khởi chạy lần đầu, hệ thống tự động nạp sẵn một kịch bản bệnh viện hoàn chỉnh:
+\begin{itemize}
+  \item \textbf{07 Chuyên khoa:} Nội tổng quát, Ngoại khoa, Sản \& Nhi, Tim mạch, Nhi khoa, Da liễu và Các khoa khác.
+  \item \textbf{Đội ngũ bác sĩ và điều dưỡng:} Gồm 7 bác sĩ gắn với các phòng khám cụ thể (như BS. Hoàng Minh Long -- Phòng 201 Nội tổng quát, BS. Trần Thảo Nguyên -- Phòng 305 Tim mạch, BS. Nguyễn Quốc Huy -- Phòng 102 Nhi khoa) và 2 điều dưỡng trực tiếp nhận.
+  \item \textbf{200 Giường bệnh nội trú:} Phân bổ trên các khoa với tỷ lệ sử dụng thực tế \textbf{156/200 giường (78\%)}, còn 39 giường trống và 5 giường đang bảo trì.
+  \item \textbf{Dữ liệu bệnh nhân và lịch sử 14 ngày:} Có sẵn tài khoản mẫu cho cả 4 vai trò (mật khẩu chung \texttt{123456}), lịch sử khám 14 ngày để vẽ biểu đồ so sánh 7 ngày, bệnh nhân có tiền sử dị ứng Penicillin để kiểm chứng cảnh báo kê đơn, hóa đơn đã thanh toán và hóa đơn chờ đối soát QR.
+\end{itemize}
+
+\section{Hướng dẫn cài đặt và Chạy hệ thống}
+\begin{enumerate}
+  \item Cài đặt và mở \textbf{Docker Desktop}.
+  \item Sao chép file \texttt{.env.example} thành \texttt{.env} ở thư mục gốc dự án.
+  \item Chạy lệnh khởi động Docker Compose tại thư mục gốc: Docker sẽ tự động khởi tạo cơ sở dữ liệu PostgreSQL 16, tạo 17 bảng, nạp dữ liệu mẫu và mở cả máy chủ xử lý lẫn giao diện web.
+  \item Truy cập trang web trên trình duyệt tại địa chỉ \texttt{http://localhost:5173} và dùng chức năng chọn nhanh tài khoản mẫu trên màn hình đăng nhập để trải nghiệm đầy đủ cả 4 vai trò.
+  \item Nếu muốn chia sẻ cho thành viên trong nhóm truy cập từ xa vào máy mình để dùng thử (kể cả trên điện thoại), chỉ cần bật \textbf{Tailscale} giữa các máy trong nhóm.
+\end{enumerate}
+
+% ==================== CHUONG 6 ====================
+\chapter{Kiểm thử và Kết luận}
+
+\section{Chiến lược kiểm thử}
+Hệ thống được kiểm tra chất lượng theo 3 lớp:
+\begin{enumerate}
+  \item \textbf{Kiểm tra hợp lệ cấu trúc và kiểu dữ liệu:} Bảo đảm mô hình cơ sở dữ liệu, mã nguồn giao diện và máy chủ không có lỗi cú pháp hay sai lệch kiểu dữ liệu trước khi đóng gói.
+  \item \textbf{Kiểm thử logic nghiệp vụ cốt lõi:} Kiểm tra các tình huống quan trọng như đặt lịch không trùng STT, giữ nguyên STT khi hủy lịch, tính giờ dự kiến, phát hiện dị ứng thuốc, xác nhận thanh toán trọn gói và điều phối giường bệnh.
+  \item \textbf{Kiểm thử phân quyền và Vận hành thực tế trên Docker:} Kiểm tra việc chặn truy cập trái vai trò và chạy thử nghiệm trực tiếp với cơ sở dữ liệu PostgreSQL 16 thật trong Docker Compose.
+\end{enumerate}
+
+\section{Bảng kịch bản kiểm thử (Test Cases)}
+
+\begin{longtable}{@{}p{1.45cm} p{2.05cm} p{2.85cm} p{3.95cm} p{3.95cm}@{}}
+  \caption{Bộ kịch bản kiểm thử nghiệp vụ 4 vai trò và An toàn dữ liệu} \label{tab:testcases} \\
+  \toprule
+  \textbf{Mã TC} & \textbf{Đối tượng} & \textbf{Tên kịch bản} & \textbf{Các bước thực hiện} & \textbf{Kết quả mong đợi} \\
+  \midrule
+  \endfirsthead
+  \toprule
+  \textbf{Mã TC} & \textbf{Đối tượng} & \textbf{Tên kịch bản} & \textbf{Các bước thực hiện} & \textbf{Kết quả mong đợi} \\
+  \midrule
+  \endhead
+  \bottomrule
+  \endfoot
+  \texttt{TC-01} & Bệnh nhân & Đặt lịch 3 luồng & Chọn luồng (Khoa/Bác sĩ/Ngày) $\rightarrow$ Buổi Sáng $\rightarrow$ Xác nhận. & Tạo lịch thành công, cấp STT tăng dần, hiển thị giờ dự kiến và gửi thông báo. \\
+  \texttt{TC-02} & Bệnh nhân & Hủy lịch giữ nguyên STT & Có STT \#1, \#2, \#3; người \#2 hủy $\rightarrow$ người mới đặt tiếp. & Người \#2 hủy; người \#3 giữ nguyên STT \#03; người mới nhận STT \#04. \\
+  \texttt{TC-03} & Bệnh nhân & Thanh toán QR & Mở hóa đơn chưa trả $\rightarrow$ Chọn chuyển khoản QR và xác nhận. & Hóa đơn chuyển trạng thái chờ đối soát để điều dưỡng kiểm tra. \\
+  \texttt{TC-04} & Bác sĩ & Gọi số tiếp theo & Trong buổi có bệnh nhân chờ $\rightarrow$ Bấm \textbf{Gọi số tiếp theo}. & Chuyển bệnh nhân kế tiếp sang Đang khám và gửi thông báo gọi số. \\
+  \texttt{TC-05} & Bác sĩ & Cảnh báo dị ứng & Bệnh nhân dị ứng Penicillin, loét dạ dày $\rightarrow$ Kê Amoxicillin, Ibuprofen. & Hiện cảnh báo nặng cho Amoxicillin và cảnh báo trung bình cho Ibuprofen. \\
+  \texttt{TC-06} & Bác sĩ & Công bố bệnh án & Nhập chẩn đoán, chỉ định XN, đơn thuốc $\rightarrow$ Bấm Công bố. & Tạo hóa đơn viện phí và thuốc tách biệt, hoàn tất lượt khám và gửi thông báo. \\
+  \texttt{TC-07} & Điều dưỡng & Walk-in \& Sinh hiệu & Đăng ký vãng lai (ưu tiên) $\rightarrow$ Nhập huyết áp, mạch, chiều cao, cân nặng. & Cấp STT kế tiếp, tự tính BMI và đưa vào hàng đợi bác sĩ. \\
+  \texttt{TC-08} & Điều dưỡng & Thu ngân \& Phát thuốc & Xác nhận thu tiền hóa đơn thuốc $\rightarrow$ Bấm Cấp phát thuốc. & Mở khóa đơn thuốc, trừ tồn kho; chặn phát nếu hóa đơn chưa thanh toán. \\
+  \texttt{TC-09} & Điều dưỡng & Điều phối giường & Xếp giường trống $\rightarrow$ Chuyển giường $\rightarrow$ Xuất viện. & Cập nhật đúng trạng thái và lịch sử giường; chặn xếp vào giường đang có người. \\
+  \texttt{TC-10} & Trưởng BV & Dashboard \& Xuất CSV & Mở Tổng quan bệnh viện và bấm xuất báo cáo CSV. & Hiển thị 4 KPI, biểu đồ 7 ngày, công suất giường (78\%) và tải được file CSV. \\
+  \texttt{TC-11} & Hệ thống & Chống trùng STT & Hai yêu cầu đặt cùng bác sĩ, cùng ngày/buổi tại cùng thời điểm. & Khóa tuần tự cấp 2 STT liên tiếp khác nhau, không trùng số. \\
+  \texttt{TC-12} & Hệ thống & Chống đặt trùng buổi & Một bệnh nhân đặt 2 lịch còn hiệu lực cùng bác sĩ trong cùng buổi. & Từ chối lượt đặt thứ hai và thông báo đã có lịch trong buổi này. \\
+  \texttt{TC-13} & Bảo mật & Phân quyền vai trò & Chưa đăng nhập vào trang nội bộ hoặc Bệnh nhân vào trang Bác sĩ/Quản lý. & Chặn truy cập trái phép và tự động điều hướng về đúng cổng hợp lệ. \\
+\end{longtable}
+
+\section{Kết quả kiểm tra và chạy thử thực tế}
+
+Hệ thống (17 bảng PostgreSQL + 12 cột JSONB, Backend, Frontend và Docker Compose) đã được kiểm thử và chạy thực tế thành công (Bảng~\ref{tab:verify-results}).
+
+\begin{table}[H]
+  \centering
+  \caption{Tổng hợp kết quả kiểm tra và chạy thử nghiệm hệ thống}
+  \label{tab:verify-results}
+  \begin{tabularx}{\textwidth}{@{}p{4.1cm} p{4.2cm} X@{}}
+    \toprule
+    \textbf{Hạng mục kiểm tra} & \textbf{Phạm vi thực hiện} & \textbf{Kết quả đạt được} \\
+    \midrule
+    \textbf{Kiểm tra cấu trúc CSDL} & Thiết kế Prisma và 17 bảng PostgreSQL & Hợp lệ hoàn toàn; khởi tạo sạch trên PostgreSQL 16 cùng dữ liệu mẫu (200 giường, 7 bác sĩ, 2 điều dưỡng, 21 lịch hẹn mẫu). \\
+    \addlinespace
+    \textbf{Bộ kiểm thử tự động Backend} & 4 nhóm kiểm thử nghiệp vụ (STT, Dị ứng \& Bệnh án, Thanh toán \& Giường, Phân quyền) & \textbf{Đạt 20/20 tình huống kiểm thử} (chạy bằng dữ liệu giả lập trong môi trường kiểm thử tự động). \\
+    \addlinespace
+    \textbf{Đóng gói Backend \& Frontend} & Biên dịch TypeScript và đóng gói bản phát hành & Cả Backend và Frontend đều biên dịch thành công, không có lỗi kiểu hay lỗi giao diện. \\
+    \addlinespace
+    \textbf{Chạy thực tế trên Docker} & Khởi chạy đồng thời 3 dịch vụ (PostgreSQL, Backend, Frontend) & Trang web hoạt động mượt mà trên trình duyệt; các màn hình và Dashboard hiển thị đúng số liệu từ JSONB (công suất giường 78\%, sinh hiệu, đơn thuốc, hóa đơn). \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{Đánh giá và Hướng phát triển}
+
+\subsection{Kết quả đạt được}
+\begin{itemize}
+  \item Hoàn thành trọn vẹn mô hình bệnh viện điện tử 4 vai trò sát với quy trình thực tế tại Việt Nam (đặt lịch 3 luồng theo Buổi Sáng/Chiều và cấp STT tự động).
+  \item Thiết kế cơ sở dữ liệu trên một hệ quản trị PostgreSQL 16 + JSONB duy nhất, cân bằng tốt giữa tính an toàn tài chính/y tế và tính linh hoạt dữ liệu.
+  \item Giao diện đồng bộ, rõ nét, hỗ trợ cả máy tính và điện thoại.
+\end{itemize}
+
+\subsection{Hạn chế và Hướng phát triển tiếp theo}
+\begin{enumerate}
+  \item \textbf{Cập nhật STT trực tiếp (Realtime):} Hiện tại trang theo dõi của bệnh nhân và thông báo đang đồng bộ định kỳ; trong phiên bản tới có thể nâng cấp truyền tải tức thời qua WebSocket để màn hình phòng chờ nhảy số ngay lập tức khi bác sĩ gọi bệnh nhân.
+  \item \textbf{Thanh toán trực tuyến thực tế:} Tích hợp cổng thanh toán ngân hàng/VietQR thật có xác nhận giao dịch tự động thay cho bước đối soát thủ công mô phỏng.
+  \item \textbf{Liên thông Bảo hiểm Y tế và Tối ưu tải trang:} Kết nối tra cứu thẻ BHYT trực tuyến và tách nhỏ mã giao diện theo từng vai trò để tăng tốc độ tải trang trên mạng di động.
+\end{enumerate}
+
+\end{document}
