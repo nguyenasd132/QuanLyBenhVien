@@ -31,3 +31,8 @@ coverage/
 # Local backups
 backups/
 *.zip
+
+# Local team plans & coding guides (not pushed to GitHub)
+docs/KeHoachVaHuongDan/
+docs/Bang_Theo_Doi_Tien_Do_An_Tam.xlsx
+docs/~$*
