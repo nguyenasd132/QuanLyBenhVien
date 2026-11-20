@@ -24,10 +24,12 @@ Nền tảng **An Tâm Hospital & Health Portal** là hệ thống quản lý kh
 - **Cơ sở dữ liệu (`backend/prisma/`):** PostgreSQL 16 + Prisma ORM 6 (`17` bảng quan hệ chuẩn hóa, `12` cột bán cấu trúc `JSONB`, chỉ mục `GIN` và `2` `Partial Unique Index` chống trùng Số thứ tự STT).
 - **Kiểm thử & Hạ tầng:** Vitest, Supertest, Docker Compose, Tailscale Mesh VPN.
 
-### 1.2. Hiện trạng bản Starter trên nhánh `main`
-Nhánh `main` đã hoàn thiện sẵn toàn bộ phần nền tảng để thành viên mới kéo về **tự lập trình lại phần xử lý nghiệp vụ Backend & kiểm thử**:
-- **Đã có sẵn 100%:** Giao diện React đầy đủ cho cả 4 vai trò (`frontend/`), Lược đồ PostgreSQL 16 & migration (`backend/prisma/schema.prisma`, `backend/prisma/migrations/`), dữ liệu mẫu (`backend/prisma/seed.ts`), Docker Compose (`docker-compose.yml`), Middleware xác thực JWT/RBAC/Zod (`backend/src/middleware/`), cấu trúc Router (`backend/src/routes/`) và endpoint `GET /api/health`.
-- **Phần thành viên cần tự code:** Các xử lý nghiệp vụ trong `backend/src/services/`, kết nối vào `backend/src/routes/*.routes.ts` (hiện đang trả về `501 NOT_IMPLEMENTED` kèm ghi chú `TODO` chi tiết), và bộ test tự động trong `backend/tests/`.
+### 1.2. Hiện trạng dự án trên nhánh `main`
+Nhánh `main` đã hoàn thiện sẵn nền tảng hạ tầng, giao diện, cơ sở dữ liệu và module xác thực để thành viên mới kéo về **tiếp tục lập trình phần xử lý nghiệp vụ các cổng & kiểm thử**:
+- **Đã có sẵn & hoạt động:**
+  - Toàn bộ giao diện React cho cả 4 vai trò (`frontend/`), Lược đồ PostgreSQL 16 & migration (`backend/prisma/schema.prisma`, `backend/prisma/migrations/`), dữ liệu mẫu (`backend/prisma/seed.ts`), Docker Compose (`docker-compose.yml`), Middleware xác thực JWT/RBAC/Zod (`backend/src/middleware/`), cấu trúc Router (`backend/src/routes/`) và `GET /api/health`.
+  - **Chức năng Đăng nhập & Đăng ký (`backend/src/services/auth.service.ts`, `backend/src/routes/auth.routes.ts`, `backend/tests/auth.test.ts`):** Đã hoàn thiện `POST /api/auth/login`, `POST /api/auth/register`, `GET /api/auth/me` và `PATCH /api/auth/profile` (đã có 11 test cases Vitest + Supertest).
+- **Phần thành viên tiếp tục tự code:** Các xử lý nghiệp vụ còn lại trong `backend/src/services/` (`appointment`, `record`, `invoice.formatter`, `payment`, `bed`, `admin`, `utils/allergy.ts`), kết nối vào 6 file router (`public`, `notification`, `patient`, `doctor`, `nurse`, `admin` — hiện đang trả về `501 NOT_IMPLEMENTED` kèm ghi chú `TODO` chi tiết), và bổ sung các bộ test tự động trong `backend/tests/`.
 
 ### 1.3. Tài liệu tham khảo quan trọng trong Repository
 
@@ -219,7 +221,7 @@ Sau khi 3 container báo `Up` / `(healthy)`, mở trình duyệt kiểm tra 3 đ
    ![Kết quả API Healthcheck](docs/images/setup/api-health.png)
 
 #### Danh sách Tài khoản Demo đã được Seed sẵn (Mật khẩu chung: `123456`)
-*(Lưu ý: Trên bản Starter nhánh `main`, API `/api/auth/login` và các route nghiệp vụ đang trả `501 NOT_IMPLEMENTED` cho đến khi nhóm code xong phần Backend tương ứng).*
+*(Lưu ý: API xác thực `/api/auth/login`, `/api/auth/register`, `/api/auth/me` và `/api/auth/profile` đã hoạt động đầy đủ — bạn có thể đăng nhập bằng các tài khoản Demo bên dưới hoặc đăng ký bệnh nhân mới tại `/register`. Các API nghiệp vụ chuyên sâu bên trong từng cổng hiện vẫn trả `501 NOT_IMPLEMENTED` cho đến khi nhóm code xong phần Service tương ứng).*
 
 | Vai trò | Họ tên | Email đăng nhập | Ghi chú hồ sơ |
 | :--- | :--- | :--- | :--- |
@@ -266,7 +268,7 @@ Khi bắt đầu lập trình phần Backend, bạn nên giữ **PostgreSQL ch�
   - `npx prisma validate` *(hoặc `npm run prisma:validate`)* — Kiểm tra hợp lệ `schema.prisma` (cần có `backend/.env`).
   - `npx tsc --noEmit` — Kiểm tra lỗi kiểu TypeScript.
   - `npm run build` — Biên dịch mã nguồn sang `backend/dist/`.
-  - `npm test` — Chạy bộ test tự động bằng Vitest (`vitest run`) *(chạy sau khi `TV1` tạo các file `*.test.ts` trong `backend/tests/`; trên bản Starter hiện tại chưa có file test nên lệnh sẽ báo `No test files found`)* .
+  - `npm test` — Chạy bộ test tự động bằng Vitest (`vitest run`) *(cần `antam-postgres` đang chạy và `backend/.env` hoặc `.env` ở gốc; hiện đã có `backend/tests/auth.test.ts` gồm 11 test cases cho Auth, các test nghiệp vụ khác sẽ chạy cùng khi `TV1` bổ sung thêm `*.test.ts`)*.
 - **Frontend (`cd frontend`):**
   - `npm run typecheck` *(tương đương `npx tsc --noEmit`)* — Kiểm tra kiểu TypeScript.
   - `npm run build` — Kiểm tra build production (`tsc -b && vite build`).
@@ -293,7 +295,7 @@ Mỗi thành viên đối chiếu chi tiết tại [backend/src/services/README.
 | Thành viên | Nhánh Git | Phạm vi phụ trách |
 | :--- | :--- | :--- |
 | **TV1 (Nhóm trưởng)** | `main` | Thiết lập khung Docker/DB/CI, viết bộ test tự động Vitest + Supertest (`backend/tests/`), Review & Merge Pull Request, kiểm thử tích hợp toàn hệ thống. |
-| **TV2 (Bệnh nhân & Auth)** | `feat/tv2-patient` | `auth.routes.ts`, `auth.service.ts`, `public.routes.ts`, `notification.routes.ts`, `appointment.service.ts` (đặt lịch 3 luồng, `SELECT FOR UPDATE` chống trùng STT, đổi/hủy giữ STT), phần hồ sơ & đặt lịch trong `patient.routes.ts`. |
+| **TV2 (Bệnh nhân & Auth)** | `feat/tv2-patient` | `auth.routes.ts` & `auth.service.ts` *(đã hoàn thành)*; phần cần tiếp tục: `public.routes.ts`, `notification.routes.ts`, `appointment.service.ts` (đặt lịch 3 luồng, `SELECT FOR UPDATE` chống trùng STT, đổi/hủy giữ STT), phần hồ sơ & đặt lịch trong `patient.routes.ts`. |
 | **TV3 (Bác sĩ & Bệnh án)** | `feat/tv3-doctor` | `utils/allergy.ts`, `doctor.routes.ts`, `record.service.ts`, `invoice.formatter.ts`, phần xem kết quả khám & đơn thuốc trong `patient.routes.ts`. |
 | **TV4 (Điều dưỡng & Thu ngân)** | `feat/tv4-nurse` | `nurse.routes.ts`, `payment.service.ts` (QR/tiền mặt, xác nhận thu ngân nguyên tử, phát thuốc trừ kho), `bed.service.ts` (nhập/chuyển/xuất/bảo trì giường), phần thanh toán trong `patient.routes.ts`. |
 | **TV5 (Quản trị & Báo cáo)** | `feat/tv5-admin` | `admin.routes.ts`, `admin.service.ts` (Dashboard KPI, so sánh 7 ngày, công suất giường, CRUD danh mục & nhân sự, tra cứu toàn viện, xuất CSV). |
@@ -371,5 +373,5 @@ Khi một thành viên chạy Backend + PostgreSQL trên máy của mình và mu
 | `Bind for 0.0.0.0:5432 failed: port is already allocated` | Máy đã có PostgreSQL khác đang chạy chiếm cổng `5432`. | Mở `.env` (và `backend/.env`), đổi `POSTGRES_PORT=5433` và đổi `:5432/` trong `DATABASE_URL` thành `:5433/`. Sau đó chạy `docker compose up -d`. |
 | Docker Desktop báo `WSL 2 installation is incomplete` hoặc không khởi động được | Chưa bật WSL 2 hoặc chưa bật Virtualization trong BIOS. | Mở PowerShell (Run as Administrator) chạy `wsl --install` hoặc `wsl --update`, bật Virtualization (VT-x/AMD-V) trong BIOS, khởi động lại máy. |
 | `Error: P1012: Environment variable not found: DATABASE_URL` khi chạy `npx prisma validate` / `migrate` / `studio` | Prisma CLI chỉ tìm file `.env` bên trong thư mục `backend/`, chưa tìm thấy `backend/.env`. | Đứng ở thư mục gốc chạy `Copy-Item .env backend\.env` (hoặc truyền biến `$env:DATABASE_URL="postgresql://antam_user:antam_password@localhost:5433/antam_hospital?schema=public"`). |
-| Giao diện báo lỗi `501 NOT_IMPLEMENTED` khi bấm Đăng nhập hoặc tải danh sách | Đây là hành vi chuẩn của bản **Starter Edition** trên nhánh `main` khi route nghiệp vụ chưa được TV2–TV5 code. | Xem comment `TODO` trong file `backend/src/routes/*.routes.ts` tương ứng và đặc tả `backend/API_CONTRACT.md` để lập trình service/route. |
+| Giao diện báo lỗi `501 NOT_IMPLEMENTED` khi mở đặt lịch, khám bệnh, thu ngân hoặc báo cáo | Chức năng Đăng nhập/Đăng ký đã hoạt động, nhưng các route nghiệp vụ của cổng tương ứng trên `main` chưa được TV2–TV5 cài đặt. | Xem comment `TODO` trong file `backend/src/routes/*.routes.ts` tương ứng và đặc tả `backend/API_CONTRACT.md` để lập trình service/route. |
 | Đã sửa code trong `backend/src/` nhưng container Docker chưa cập nhật | Container `antam-backend` chạy bản build `dist/` cũ. | Nếu đang code, hãy chuyển sang **Chế độ Hybrid** (`docker compose stop backend` và chạy `npm run dev` ở máy), hoặc chạy `docker compose up --build -d backend` để build lại image. |
