@@ -1,37 +1,227 @@
 # Hệ thống Quản lý Bệnh viện & Cổng Sức Khỏe An Tâm
 
-Nền tảng quản lý bệnh viện đa khoa và cổng chăm sóc sức khỏe trực tuyến **An Tâm**, thiết kế theo kiến trúc Client-Server (React + Vite + TypeScript + Tailwind CSS và Node.js + Express + TypeScript + Prisma ORM + PostgreSQL 16 với cột JSONB và Partial Unique Index).
+> **Hướng dẫn cài đặt môi trường & khởi chạy dự án dành cho thành viên mới (Starter Edition — Nhánh `main`)**
 
-> **Tài liệu báo cáo chi tiết (CNPM):** Xem [docs/BAO_CAO_CNPM_AN_TAM.md](docs/BAO_CAO_CNPM_AN_TAM.md)  
-> **Đặc tả API REST:** Xem [backend/API_CONTRACT.md](backend/API_CONTRACT.md)
+Nền tảng **An Tâm Hospital & Health Portal** là hệ thống quản lý khám chữa bệnh đa khoa và cổng sức khỏe trực tuyến gồm **4 cổng vai trò**: **Bệnh nhân (`PATIENT`)**, **Bác sĩ (`DOCTOR`)**, **Điều dưỡng (`NURSE`)** và **Trưởng bệnh viện (`ADMIN`)**.
 
 ---
 
-## 1. Tính năng nổi bật theo 4 vai trò
+## Mục lục
 
-| Vai trò | Chức năng chính |
+1. [Tổng quan dự án & Tài liệu có sẵn](#1-tổng-quan-dự-án--tài-liệu-có-sẵn)
+2. [Công cụ cần cài đặt & Link tải chính thức](#2-công-cụ-cần-cài-đặt--link-tải-chính-thức)
+3. [Hướng dẫn cài đặt & Chạy dự án từng bước](#3-hướng-dẫn-cài-đặt--chạy-dự-án-từng-bước)
+4. [Quy trình làm việc nhóm trên GitHub & Phân công](#4-quy-trình-làm-việc-nhóm-trên-github--phân-công)
+5. [Kết nối test chéo qua Tailscale & Xử lý lỗi thường gặp](#5-kết-nối-test-chéo-qua-tailscale--xử-lý-lỗi-thường-gặp)
+
+---
+
+## 1. Tổng quan dự án & Tài liệu có sẵn
+
+### 1.1. Ngăn xếp công nghệ (Tech Stack)
+- **Frontend (`frontend/`):** React 18, TypeScript 5.6, Vite 5.4, Tailwind CSS 3.4, React Router v6, Lucide React, Recharts.
+- **Backend (`backend/`):** Node.js 22, Express 4, TypeScript 5.8, Zod, JWT (`jsonwebtoken`), `bcryptjs`, Helmet, CORS.
+- **Cơ sở dữ liệu (`backend/prisma/`):** PostgreSQL 16 + Prisma ORM 6 (`17` bảng quan hệ chuẩn hóa, `12` cột bán cấu trúc `JSONB`, chỉ mục `GIN` và `2` `Partial Unique Index` chống trùng Số thứ tự STT).
+- **Kiểm thử & Hạ tầng:** Vitest, Supertest, Docker Compose, Tailscale Mesh VPN.
+
+### 1.2. Hiện trạng bản Starter trên nhánh `main`
+Nhánh `main` đã hoàn thiện sẵn toàn bộ phần nền tảng để thành viên mới kéo về **tự lập trình lại phần xử lý nghiệp vụ Backend & kiểm thử**:
+- **Đã có sẵn 100%:** Giao diện React đầy đủ cho cả 4 vai trò (`frontend/`), Lược đồ PostgreSQL 16 & migration (`backend/prisma/schema.prisma`, `backend/prisma/migrations/`), dữ liệu mẫu (`backend/prisma/seed.ts`), Docker Compose (`docker-compose.yml`), Middleware xác thực JWT/RBAC/Zod (`backend/src/middleware/`), cấu trúc Router (`backend/src/routes/`) và endpoint `GET /api/health`.
+- **Phần thành viên cần tự code:** Các xử lý nghiệp vụ trong `backend/src/services/`, kết nối vào `backend/src/routes/*.routes.ts` (hiện đang trả về `501 NOT_IMPLEMENTED` kèm ghi chú `TODO` chi tiết), và bộ test tự động trong `backend/tests/`.
+
+### 1.3. Tài liệu tham khảo quan trọng trong Repository
+
+| Tài liệu | Nội dung chính |
 | :--- | :--- |
-| **Bệnh nhân (`PATIENT`)** | Đặt lịch khám 3 luồng (*Theo chuyên khoa*, *Theo bác sĩ*, *Theo ngày*) theo **Buổi Sáng (07:30–11:30) / Buổi Chiều (13:30–17:00)** và nhận **Số thứ tự (STT)** tức thì; theo dõi STT đang khám trực tiếp; đổi/hủy lịch; quản lý hồ sơ dị ứng & bệnh nền; xem kết quả khám, đơn thuốc; thanh toán QR chuyển khoản giả lập hoặc tại quầy; nhận thông báo. |
-| **Bác sĩ (`DOCTOR`)** | Hàng đợi theo buổi sắp xếp tăng dần theo STT, nút **Gọi số tiếp theo**; xem sinh hiệu & tiền sử dị ứng bệnh nhân; ghi bệnh án (ICD-10, kết quả chuyên khoa JSONB, chỉ định CLS); trình kê đơn **tự động cảnh báo dị ứng** đối chiếu với hồ sơ bệnh nhân; công bố kết quả tự động sinh hóa đơn & thông báo; đặt lịch tái khám cấp STT; quản lý lịch trực theo buổi. |
-| **Điều dưỡng (`NURSE`)** | Tiếp nhận Check-in theo mã lịch hẹn / STT; đăng ký bệnh nhân vãng lai (**Walk-in**) có tùy chọn ưu tiên & cấp STT tiếp theo; đo sinh hiệu Triage & checklist BHYT (`JSONB`); thu ngân đối soát xác nhận thanh toán nguyên tử (QR / tiền mặt); cấp phát thuốc đã thanh toán; điều phối giường bệnh nội trú (nhập viện, chuyển giường, xuất viện, bảo trì). |
-| **Trưởng bệnh viện (`ADMIN`)** | Dashboard KPI thời gian thực (lượt khám hôm nay, biểu đồ so sánh 7 ngày vs 7 ngày trước, bác sĩ đang trực, lịch hẹn trong ngày, công suất giường bệnh tổng thể & từng khoa, doanh thu); quản trị Khoa, Phòng, Giường bệnh, Bác sĩ, Điều dưỡng, Lịch trực, Thuốc, Dịch vụ; tra cứu toàn cục & xuất báo cáo CSV. |
+| [backend/API_CONTRACT.md](backend/API_CONTRACT.md) | **Hợp đồng API chuẩn:** Toàn bộ TypeScript DTOs, HTTP Method, đường dẫn, query/body, response envelope & danh sách tài khoản Demo (`123456`). |
+| [backend/prisma/schema.prisma](backend/prisma/schema.prisma) | **Lược đồ Cơ sở dữ liệu (17 bảng):** `users`, `departments`, `rooms`, `beds`, `patients`, `doctors`, `nurses`, `doctor_schedules`, `appointments`, `medical_records`, `medicines`, `services`, `prescriptions`, `invoices`, `payments`, `notifications`, `audit_logs`. |
+| [backend/prisma/migrations/20261117000000_init/migration.sql](backend/prisma/migrations/20261117000000_init/migration.sql) | **SQL Migration gốc:** Khởi tạo 17 bảng, 2 Partial Unique Index (`WHERE "status" <> 'CANCELLED'`) và 11 chỉ mục `GIN` cho các cột `JSONB`. |
+| [backend/prisma/seed.ts](backend/prisma/seed.ts) | **Dữ liệu mẫu tiếng Việt:** 7 chuyên khoa, 7 bác sĩ, 2 điều dưỡng, 200 giường bệnh (156 giường đang sử dụng = 78%), tài khoản demo & lịch sử 14 ngày. |
+| [backend/src/services/README.md](backend/src/services/README.md) | **Phân công file Service:** Danh sách chi tiết các file service cần tạo cho từng thành viên (`TV2`–`TV5`). |
+| [backend/tests/README.md](backend/tests/README.md) | **Hướng dẫn Kiểm thử tự động:** 4 bộ test Vitest + Supertest dành cho nhóm trưởng (`TV1`). |
+| [docs/BAO_CAO_CNPM_AN_TAM.md](docs/BAO_CAO_CNPM_AN_TAM.md) | **Báo cáo Đồ án CNPM (6 chương):** Phân tích nghiệp vụ, Use Case, ERD, Sequence/Activity Diagram, UI/UX và Thiết kế hệ thống. |
 
 ---
 
-## 2. Công nghệ sử dụng
+## 2. Công cụ cần cài đặt & Link tải chính thức
 
-- **Frontend:** React 18, TypeScript, Vite 5, Tailwind CSS, React Router v6, Lucide React, Recharts
-- **Backend:** Node.js 22, Express 4, TypeScript 5, Zod, JWT (`jsonwebtoken`), `bcryptjs`, Helmet, CORS
-- **Cơ sở dữ liệu & ORM:** PostgreSQL 16 (`JSONB` + chỉ mục `GIN` + `Partial Unique Index` + khóa dòng `SELECT ... FOR UPDATE`), Prisma ORM 6
-- **Kiểm thử & Hạ tầng:** Vitest, Supertest, Docker Compose, Tailscale Mesh VPN
+Trước khi kéo mã nguồn về máy, mỗi thành viên cần cài đặt đầy đủ các công cụ bên dưới (ưu tiên cài trên **Windows 10/11** hoặc macOS/Linux tương đương):
+
+### 2.1. Git (Quản lý mã nguồn & làm việc nhóm)
+- **Link tải chính thức:** https://git-scm.com/downloads
+- **Hướng dẫn cài đặt:** Chọn bộ cài phù hợp với hệ điều hành (Windows 64-bit Setup). Khi cài giữ các tùy chọn mặc định (`Git from the command line and also from 3rd-party software`).
+- **Kiểm tra sau khi cài:** Mở PowerShell / Terminal và chạy:
+  ```bash
+  git --version
+  ```
+
+![Trang tải chính thức Git](docs/images/setup/git-download.png)
+
+### 2.2. Docker Desktop (Chạy PostgreSQL 16 & Toàn bộ hệ thống)
+- **Link tải chính thức:** https://www.docker.com/products/docker-desktop/
+- **Lưu ý quan trọng khi cài trên Windows (WSL 2):**
+  1. Bật tính năng ảo hóa (**Virtualization / VT-x / AMD-V**) trong BIOS nếu máy chưa bật.
+  2. Mở PowerShell với quyền **Administrator** và cài đặt WSL 2 trước nếu chưa có:
+     ```powershell
+     wsl --install
+     ```
+     *(Sau đó khởi động lại máy nếu Windows yêu cầu).*
+  3. Khi cài Docker Desktop, tích chọn **"Use WSL 2 instead of Hyper-V"** (trong Settings → General đảm bảo bật *"Use the WSL 2 based engine"*).
+- **Kiểm tra sau khi cài:** Mở Docker Desktop đến khi góc dưới hiện trạng thái **Engine running**, rồi chạy:
+  ```bash
+  docker --version
+  docker compose version
+  ```
+
+![Trang tải chính thức Docker Desktop](docs/images/setup/docker-download.png)
+
+### 2.3. Node.js (Khuyến nghị v22 LTS hoặc >= 20)
+- **Link tải chính thức:** https://nodejs.org/en/download
+- **Lưu ý:** Chọn tab **LTS** (khuyến nghị **v22 LTS** để khớp với image `node:22-alpine` trong `docker-compose.yml`). Trình cài đặt tự động kèm theo `npm`.
+- **Kiểm tra sau khi cài:**
+  ```bash
+  node -v
+  npm -v
+  ```
+
+![Trang tải chính thức Node.js](docs/images/setup/nodejs-download.png)
+
+### 2.4. PostgreSQL 16 (Khuyên dùng qua Docker, tùy chọn cài riêng)
+- **Link tải chính thức:** https://www.postgresql.org/download/
+- **Khuyến nghị cho nhóm:** Bạn **KHÔNG bắt buộc** phải cài PostgreSQL trực tiếp lên Windows vì `docker-compose.yml` đã đóng gói sẵn container `postgres:16-alpine` (`antam-postgres`).
+- **Lưu ý nếu máy bạn ĐÃ cài sẵn PostgreSQL trên Windows:** PostgreSQL cục bộ thường chiếm cổng mặc định **`5432`**. Lúc cấu hình `.env`, hãy đổi `POSTGRES_PORT=5433` để chạy song song không bị xung đột cổng (xem [Bước 2](#bước-2-tạo-file-biến-môi-trường-env)).
+
+![Trang tải chính thức PostgreSQL](docs/images/setup/postgres-download.png)
+
+### 2.5. Visual Studio Code & Extensions gợi ý
+- **Link tải chính thức:** https://code.visualstudio.com/download
+- **Extensions nên cài trong VS Code** (tìm trong mục Extensions `Ctrl + Shift + X`):
+  1. **Prisma** (`Prisma.prisma`) — Tô màu cú pháp, tự động format và gợi ý schema trong `backend/prisma/schema.prisma`.
+  2. **ESLint** (`dbaeumer.vscode-eslint`) — Cảnh báo lỗi cú pháp TypeScript/JS tức thì.
+  3. **Tailwind CSS IntelliSense** (`bradlc.vscode-tailwindcss`) — Gợi ý class Tailwind khi đọc/tra cứu giao diện.
+  4. **Prettier - Code formatter** (`esbenp.prettier-vscode`) — Định dạng mã nguồn thống nhất.
+  5. **Thunder Client** hoặc **REST Client** — Gửi request test nhanh các endpoint API (`/api/...`).
+  6. **Docker** (`ms-azuretools.vscode-docker`) — Xem container và log Docker trực quan ngay trong VS Code.
+
+![Trang tải chính thức Visual Studio Code](docs/images/setup/vscode-download.png)
+
+### 2.6. Tailscale (Mạng riêng ảo Mesh VPN để test chéo nhóm)
+- **Link tải chính thức:** https://tailscale.com/download
+- **Mục đích:** Tạo mạng LAN ảo bảo mật giữa máy các thành viên trong nhóm (hoặc giữa laptop và điện thoại) để gọi API/xem web chéo nhau từ xa mà không cần mở port router hay thuê server cloud.
+- **Kiểm tra sau khi cài & đăng nhập:**
+  ```bash
+  tailscale ip -4
+  ```
+
+![Trang tải chính thức Tailscale](docs/images/setup/tailscale-download.png)
 
 ---
 
-## 3. Tài khoản Demo (Mật khẩu chung: `123456`)
+## 3. Hướng dẫn cài đặt & Chạy dự án từng bước
 
-Giao diện đăng nhập có sẵn nút chọn nhanh **1-click Demo Accounts** cho cả 4 vai trò:
+### Bước 1: Clone mã nguồn từ GitHub
+Mở PowerShell / Terminal tại thư mục muốn lưu dự án và chạy:
 
-| Vai trò | Họ tên | Email | Ghi chú |
+```bash
+git clone https://github.com/nguyenasd132/QuanLyBenhVien.git
+cd QuanLyBenhVien
+```
+
+*(Kiểm tra chắc chắn bạn đang ở nhánh `main`: `git checkout main`)*
+
+---
+
+### Bước 2: Tạo file biến môi trường `.env`
+Sao chép file mẫu `.env.example` thành `.env` ở **thư mục gốc dự án**:
+
+- **Trên Windows PowerShell:**
+  ```powershell
+  Copy-Item .env.example .env
+  ```
+- **Trên macOS / Linux / Git Bash:**
+  ```bash
+  cp .env.example .env
+  ```
+
+> **LƯU Ý QUAN TRỌNG VỀ CỔNG POSTGRESQL (`5432` vs `5433`):**  
+> Nếu máy tính của bạn **đã có sẵn một dịch vụ PostgreSQL khác chạy ở cổng `5432`**, hãy mở file `.env` vừa tạo và đổi `POSTGRES_PORT=5433` cùng cổng trong `DATABASE_URL` thành `5433`:
+>
+> ```env
+> # Database (PostgreSQL 16)
+> POSTGRES_USER=antam_user
+> POSTGRES_PASSWORD=antam_password
+> POSTGRES_DB=antam_hospital
+> POSTGRES_PORT=5433
+>
+> # Local development DATABASE_URL (Docker Compose tự override host sang 'postgres:5432' bên trong mạng nội bộ)
+> DATABASE_URL=postgresql://antam_user:antam_password@localhost:5433/antam_hospital?schema=public
+>
+> # Backend API Server
+> BACKEND_PORT=4000
+> NODE_ENV=development
+> JWT_SECRET=antam-hospital-dev-jwt-secret-change-in-production
+> JWT_EXPIRES_IN=7d
+> CORS_ORIGIN=http://localhost:5173
+>
+> # Frontend Vite App
+> FRONTEND_PORT=5173
+> VITE_API_URL=http://localhost:4000/api
+> ```
+>
+> **Mẹo cho Prisma CLI:** Khi chạy các lệnh `npx prisma validate`, `migrate`, `seed`, `studio` trực tiếp trên máy bên trong thư mục `backend/`, Prisma CLI chỉ tìm file `.env` ngay tại `backend/.env` (trong khi code Express đọc cả `.env` ở gốc lẫn `backend/.env`). Hãy copy thêm một bản sang `backend/.env`:
+> ```powershell
+> Copy-Item .env backend\.env
+> ```
+> *(Cả `.env` và `backend/.env` đều đã được liệt kê trong `.gitignore`, không bị đẩy lên Git).*
+
+---
+
+### Bước 3: Khởi chạy toàn bộ hệ thống bằng Docker Compose
+Đảm bảo **Docker Desktop đang mở**, đứng tại thư mục gốc dự án và chạy:
+
+```bash
+docker compose up --build -d
+```
+
+Lệnh này sẽ khởi chạy tuần tự 3 container:
+1. **`antam-postgres`** (`postgres:16-alpine`): Khởi tạo database PostgreSQL 16 kèm healthcheck.
+2. **`antam-backend`** (`backend/Dockerfile`): Tự động chạy `npx prisma migrate deploy && npx prisma db seed && node dist/server.js` trên cổng `4000`.
+3. **`antam-frontend`** (`node:22-alpine`): Cài dependencies và chạy Vite dev server trên cổng `5173`.
+
+Kiểm tra trạng thái các container:
+```bash
+docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
+```
+
+![Minh họa kiểm tra 3 container Docker Compose](docs/images/setup/step-docker-ps.png)
+
+> Nếu muốn tắt hệ thống: `docker compose down`  
+> Nếu muốn xóa sạch dữ liệu DB để chạy seed lại từ đầu: `docker compose down -v && docker compose up --build -d`
+
+---
+
+### Bước 4: Kiểm tra Giao diện Web (`:5173`) & API Healthcheck (`:4000`)
+
+Sau khi 3 container báo `Up` / `(healthy)`, mở trình duyệt kiểm tra 3 đường dẫn sau:
+
+1. **Trang Đăng nhập Web:** `http://localhost:5173/login`  
+   Giao diện An Tâm hiển thị kèm 4 thẻ **Đăng nhập nhanh tài khoản Demo**:
+
+   ![Màn hình Đăng nhập Web An Tâm](docs/images/setup/app-login.png)
+
+2. **Trang Trung tâm Trợ giúp công khai:** `http://localhost:5173/help`
+
+   ![Màn hình Trung tâm Trợ giúp An Tâm](docs/images/setup/app-help.png)
+
+3. **Backend Healthcheck API:** `http://localhost:4000/api/health`  
+   Kết quả JSON trả về thành công: `{"success":true,"data":{"status":"ok","service":"antam-backend",...}}`:
+
+   ![Kết quả API Healthcheck](docs/images/setup/api-health.png)
+
+#### Danh sách Tài khoản Demo đã được Seed sẵn (Mật khẩu chung: `123456`)
+*(Lưu ý: Trên bản Starter nhánh `main`, API `/api/auth/login` và các route nghiệp vụ đang trả `501 NOT_IMPLEMENTED` cho đến khi nhóm code xong phần Backend tương ứng).*
+
+| Vai trò | Họ tên | Email đăng nhập | Ghi chú hồ sơ |
 | :--- | :--- | :--- | :--- |
 | `PATIENT` | Lê Minh Anh | `minhanh.patient@antam.vn` | Mã BN: `BN-08250` |
 | `DOCTOR` | BS. Hoàng Minh Long | `long.doctor@antam.vn` | `BS-001` • Nội tổng quát • Phòng 201 |
@@ -42,139 +232,144 @@ Giao diện đăng nhập có sẵn nút chọn nhanh **1-click Demo Accounts** 
 
 ---
 
-## 4. Hướng dẫn cài đặt & Chạy nhanh với Docker Compose
+### Bước 5: Chế độ chạy Hybrid để Code (Khuyên dùng khi lập trình)
 
-### Yêu cầu môi trường
-- **Docker Desktop** (hoặc Docker Engine + Docker Compose v2) nếu chạy toàn bộ bằng container.
-- Hoặc **Node.js >= 20** (khuyến nghị Node.js 22) và **PostgreSQL 16** nếu chạy Backend/Frontend trực tiếp trên máy.
+Khi bắt đầu lập trình phần Backend, bạn nên giữ **PostgreSQL chạy trong Docker** và chạy **Backend + Frontend trực tiếp trên máy** để nhận tính năng tự khởi động lại khi lưu file (`tsx watch` & Vite HMR):
 
-### Bước 1: Tạo file biến môi trường `.env`
-Sao chép file mẫu `.env.example` ở thư mục gốc:
+1. **Tắt container `backend` và `frontend`, chỉ giữ `antam-postgres` chạy nền:**
+   ```bash
+   docker compose stop backend frontend
+   docker compose up -d postgres
+   ```
+2. **Terminal 1 — Chạy Backend (`backend/`):**
+   ```bash
+   cd backend
+   npm install
+   npx prisma generate
+   npx prisma migrate deploy
+   npm run dev
+   ```
+   *(Nếu chưa chạy seed lần nào: chạy thêm `npx prisma db seed` trước `npm run dev`.)*  
+   Terminal sẽ báo: `An Tâm Hospital Backend API listening on http://0.0.0.0:4000`.
+3. **Terminal 2 — Chạy Frontend (`frontend/`):**
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
+   Frontend chạy tại `http://localhost:5173` (file `frontend/vite.config.ts` tự proxy mọi request `/api` về `http://localhost:4000`).
 
-```bash
-cp .env.example .env
-```
+![Hướng dẫn chạy 2 Terminal chế độ Hybrid Dev](docs/images/setup/step-hybrid-dev.png)
 
-*(Trên Windows PowerShell: `Copy-Item .env.example .env`)*
-
-Các biến mặc định trong `.env.example`:
-```env
-POSTGRES_USER=antam_user
-POSTGRES_PASSWORD=antam_password
-POSTGRES_DB=antam_hospital
-POSTGRES_PORT=5432
-
-DATABASE_URL=postgresql://antam_user:antam_password@localhost:5432/antam_hospital?schema=public
-
-BACKEND_PORT=4000
-NODE_ENV=development
-JWT_SECRET=antam-hospital-dev-jwt-secret-change-in-production
-JWT_EXPIRES_IN=7d
-CORS_ORIGIN=http://localhost:5173
-
-FRONTEND_PORT=5173
-VITE_API_URL=http://localhost:4000/api
-```
-
-### Bước 2: Khởi chạy toàn bộ hệ thống bằng Docker Compose
-Tại thư mục gốc dự án:
-
-```bash
-docker compose up --build -d
-```
-
-Lệnh trên sẽ lần lượt:
-1. Khởi chạy `antam-postgres` (`postgres:16-alpine`) kèm healthcheck.
-2. Build & khởi chạy `antam-backend` (tự động chạy `npx prisma migrate deploy && npx prisma db seed && node dist/server.js`).
-3. Khởi chạy `antam-frontend` (Vite dev server tại cổng `5173`).
-
-Truy cập ứng dụng:
-- **Giao diện Web:** `http://localhost:5173`
-- **Backend API Healthcheck:** `http://localhost:4000/api/health`
-
-Để dừng các container:
-```bash
-docker compose down
-```
-*(Thêm `-v` nếu muốn xóa sạch volume dữ liệu PostgreSQL để seed lại từ đầu: `docker compose down -v`)*
+#### Các lệnh kiểm tra & build hữu ích trong quá trình code
+- **Backend (`cd backend`):**
+  - `npx prisma validate` *(hoặc `npm run prisma:validate`)* — Kiểm tra hợp lệ `schema.prisma` (cần có `backend/.env`).
+  - `npx tsc --noEmit` — Kiểm tra lỗi kiểu TypeScript.
+  - `npm run build` — Biên dịch mã nguồn sang `backend/dist/`.
+  - `npm test` — Chạy bộ test tự động bằng Vitest (`vitest run`) *(chạy sau khi `TV1` tạo các file `*.test.ts` trong `backend/tests/`; trên bản Starter hiện tại chưa có file test nên lệnh sẽ báo `No test files found`)* .
+- **Frontend (`cd frontend`):**
+  - `npm run typecheck` *(tương đương `npx tsc --noEmit`)* — Kiểm tra kiểu TypeScript.
+  - `npm run build` — Kiểm tra build production (`tsc -b && vite build`).
 
 ---
 
-## 5. Chạy phát triển cục bộ (Hybrid: PostgreSQL trên Docker + Backend/Frontend trên máy)
-
-Nếu muốn phát triển và debug nhanh bằng hot-reload trên máy (hoặc chỉ chạy DB bằng Docker):
-
-### 5.1. Khởi chạy PostgreSQL 16
-```bash
-docker compose up -d postgres
-```
-
-### 5.2. Cài đặt & chạy Backend (`backend/`)
-```bash
-cd backend
-npm install
-npx prisma generate
-npx prisma migrate deploy
-npx prisma db seed
-npm run dev
-```
-Backend sẽ chạy tại `http://localhost:4000`.
-
-### 5.3. Cài đặt & chạy Frontend (`frontend/`)
-Mở terminal mới tại thư mục gốc:
-```bash
-cd frontend
-npm install
-npm run dev
-```
-Frontend chạy tại `http://localhost:5173` (mặc định proxy `/api` về `http://localhost:4000` qua `vite.config.ts`).
-
----
-
-## 6. Kiểm tra chất lượng mã nguồn & Chạy Test
-
-*(Các lệnh kiểm tra không cần PostgreSQL đang chạy đối với phần build/typecheck/unit-test mock)*
-
-### Backend
-*(Đảm bảo đã sao chép `.env.example` thành `.env` hoặc truyền biến môi trường `DATABASE_URL` trước khi chạy `npx prisma validate`)*
+### Bước 6: Xem & kiểm tra dữ liệu Database bằng Prisma Studio
+Để kiểm tra trực quan 17 bảng dữ liệu (giường bệnh, lịch trực, lịch hẹn, cột `JSONB`...) sau khi seed hoặc sau khi test API, mở một Terminal mới tại `backend/` (đã có `backend/.env`):
 
 ```bash
 cd backend
-npx prisma validate
-npx tsc --noEmit
-npm run build
-npm test
+npx prisma studio
 ```
 
-### Frontend
-```bash
-cd frontend
-npx tsc --noEmit
-npm run build
-```
+Trình duyệt sẽ mở giao diện quản lý dữ liệu tại `http://localhost:5555`.
 
 ---
 
-## 7. Hướng dẫn kết nối làm việc nhóm qua Tailscale (Mesh VPN)
+## 4. Quy trình làm việc nhóm trên GitHub & Phân công
 
-Khi nhóm làm việc phân tán (một thành viên chạy Backend + PostgreSQL, các thành viên khác chạy Frontend hoặc kiểm thử trên điện thoại di động):
+### 4.1. Phân công công việc 5 thành viên (Tóm tắt)
+Mỗi thành viên đối chiếu chi tiết tại [backend/src/services/README.md](backend/src/services/README.md), [backend/tests/README.md](backend/tests/README.md) và comment `TODO` trong từng file `backend/src/routes/*.routes.ts`:
 
-1. **Cài đặt & đăng nhập chung một mạng Tailscale (Tailnet)** trên máy chạy Backend/DB và các máy/điện thoại kiểm thử.
-2. **Lấy địa chỉ IP Tailscale** của máy host (ví dụ `100.88.12.34`) bằng lệnh:
+| Thành viên | Nhánh Git | Phạm vi phụ trách |
+| :--- | :--- | :--- |
+| **TV1 (Nhóm trưởng)** | `main` | Thiết lập khung Docker/DB/CI, viết bộ test tự động Vitest + Supertest (`backend/tests/`), Review & Merge Pull Request, kiểm thử tích hợp toàn hệ thống. |
+| **TV2 (Bệnh nhân & Auth)** | `feat/tv2-patient` | `auth.routes.ts`, `auth.service.ts`, `public.routes.ts`, `notification.routes.ts`, `appointment.service.ts` (đặt lịch 3 luồng, `SELECT FOR UPDATE` chống trùng STT, đổi/hủy giữ STT), phần hồ sơ & đặt lịch trong `patient.routes.ts`. |
+| **TV3 (Bác sĩ & Bệnh án)** | `feat/tv3-doctor` | `utils/allergy.ts`, `doctor.routes.ts`, `record.service.ts`, `invoice.formatter.ts`, phần xem kết quả khám & đơn thuốc trong `patient.routes.ts`. |
+| **TV4 (Điều dưỡng & Thu ngân)** | `feat/tv4-nurse` | `nurse.routes.ts`, `payment.service.ts` (QR/tiền mặt, xác nhận thu ngân nguyên tử, phát thuốc trừ kho), `bed.service.ts` (nhập/chuyển/xuất/bảo trì giường), phần thanh toán trong `patient.routes.ts`. |
+| **TV5 (Quản trị & Báo cáo)** | `feat/tv5-admin` | `admin.routes.ts`, `admin.service.ts` (Dashboard KPI, so sánh 7 ngày, công suất giường, CRUD danh mục & nhân sự, tra cứu toàn viện, xuất CSV). |
+
+### 4.2. Quy trình Git chuẩn (Pull → Branch → Commit → Push → Pull Request)
+
+1. **Cập nhật code mới nhất từ `main` trước khi bắt đầu:**
+   ```bash
+   git checkout main
+   git pull origin main
+   ```
+2. **Tạo nhánh tính năng riêng (ví dụ cho TV2):**
+   ```bash
+   git checkout -b feat/tv2-patient
+   ```
+3. **Code và tự kiểm tra trước khi commit:**
+   ```bash
+   cd backend
+   npx tsc --noEmit
+   npm run build
+   ```
+4. **Commit và đẩy nhánh lên GitHub:**
+   ```bash
+   git status
+   git add <cac-file-ban-da-sua>
+   git commit -m "feat(tv2): implement auth and 3-flow appointment booking"
+   git push -u origin feat/tv2-patient
+   ```
+5. **Tạo Pull Request (PR) trên GitHub:**
+   - Truy cập repository trên GitHub → chọn **Compare & pull request** từ nhánh `feat/...` vào `main`.
+   - Mô tả các endpoint đã hoàn thành và gắn Nhóm trưởng (`TV1`) review trước khi merge.
+
+### 4.3. Quy tắc bảo vệ mã nguồn nền (BẮT BUỘC)
+- **KHÔNG** sửa trực tiếp code giao diện trong `frontend/` (giao diện đã khớp sẵn với `backend/API_CONTRACT.md`).
+- **KHÔNG** tự ý thay đổi `backend/prisma/schema.prisma` hoặc file migration gốc khi chưa thảo luận và thống nhất cả nhóm.
+- **KHÔNG** push trực tiếp lên nhánh `main` (luôn đi qua nhánh `feat/...` và Pull Request).
+- **KHÔNG** commit file `.env`, `backend/.env` hoặc thư mục `node_modules/`.
+
+---
+
+## 5. Kết nối test chéo qua Tailscale & Xử lý lỗi thường gặp
+
+### 5.1. Kết nối test chéo nhóm & kiểm thử Mobile qua Tailscale
+Khi một thành viên chạy Backend + PostgreSQL trên máy của mình và muốn thành viên khác (hoặc điện thoại thật) truy cập kiểm thử từ xa:
+
+1. Cả hai thiết bị đăng nhập **cùng một mạng Tailscale (Tailnet)**.
+2. Trên máy chạy Backend, lấy địa chỉ IP Tailscale (`100.x.y.z`):
    ```bash
    tailscale ip -4
    ```
-3. **Cấu hình CORS trên máy Backend:** `backend/src/app.ts` đã cấu hình tự động cho phép các origin thuộc dải mạng Tailscale (`http://100.*`) cũng như `http://localhost:*` và `http://127.0.0.1:*`. Ngoài ra bạn có thể liệt kê nhiều origin phân tách bằng dấu phẩy trong `CORS_ORIGIN`:
+3. **CORS trên Backend:** `backend/src/app.ts` đã cấu hình **tự động cho phép** mọi origin thuộc dải IP Tailscale (`http://100.*`), `http://localhost:*` và `http://127.0.0.1:*`. Ngoài ra bạn có thể liệt kê nhiều origin phân tách bằng dấu phẩy trong `CORS_ORIGIN` tại `.env`:
    ```env
    CORS_ORIGIN=http://localhost:5173,http://100.88.12.99:5173
    ```
-4. **Cấu hình Frontend trỏ tới Backend qua Tailscale:**
-   - Cách A (dùng biến `VITE_API_URL`):
+4. **Trỏ Frontend tới Backend qua IP Tailscale:**
+   - **Cách A (Sửa biến môi trường `VITE_API_URL`):**  
+     Đặt trong file `.env` ở **thư mục gốc** (nếu chạy bằng Docker Compose) hoặc tạo/sửa file `frontend/.env` (nếu chạy `npm run dev` trực tiếp trên máy vì Vite mặc định đọc `.env` tại `frontend/`):
      ```env
      VITE_API_URL=http://100.88.12.34:4000/api
      ```
-   - Cách B (dùng Vite proxy `VITE_PROXY_TARGET`, hữu ích khi mở web từ điện thoại qua IP Tailscale của máy Frontend):
+   - **Cách B (Dùng Vite Proxy `VITE_PROXY_TARGET` — khuyên dùng khi test trên điện thoại):**  
+     Đảm bảo **KHÔNG** khai báo `VITE_API_URL` trong `frontend/.env` (để `src/lib/api.ts` giữ đường dẫn tương đối `/api` đi qua Vite proxy), sau đó chạy:
      ```bash
      VITE_PROXY_TARGET=http://100.88.12.34:4000 npm run dev
      ```
-5. **Kiểm thử trên điện thoại thật:** Mở trình duyệt điện thoại đã bật Tailscale và truy cập `http://<Tailscale-IP-may-Frontend>:5173` để trải nghiệm giao diện Mobile responsive.
+     *(Trên PowerShell: `$env:VITE_PROXY_TARGET="http://100.88.12.34:4000"; npm run dev`)*.  
+     Sau đó mở trình duyệt trên điện thoại (đã bật Tailscale) và truy cập `http://<Tailscale-IP-may-chay-Frontend>:5173`.
+
+---
+
+### 5.2. Xử lý các lỗi thường gặp
+
+| Triệu chứng / Thông báo lỗi | Nguyên nhân | Cách khắc phục nhanh |
+| :--- | :--- | :--- |
+| `Bind for 0.0.0.0:5432 failed: port is already allocated` | Máy đã có PostgreSQL khác đang chạy chiếm cổng `5432`. | Mở `.env` (và `backend/.env`), đổi `POSTGRES_PORT=5433` và đổi `:5432/` trong `DATABASE_URL` thành `:5433/`. Sau đó chạy `docker compose up -d`. |
+| Docker Desktop báo `WSL 2 installation is incomplete` hoặc không khởi động được | Chưa bật WSL 2 hoặc chưa bật Virtualization trong BIOS. | Mở PowerShell (Run as Administrator) chạy `wsl --install` hoặc `wsl --update`, bật Virtualization (VT-x/AMD-V) trong BIOS, khởi động lại máy. |
+| `Error: P1012: Environment variable not found: DATABASE_URL` khi chạy `npx prisma validate` / `migrate` / `studio` | Prisma CLI chỉ tìm file `.env` bên trong thư mục `backend/`, chưa tìm thấy `backend/.env`. | Đứng ở thư mục gốc chạy `Copy-Item .env backend\.env` (hoặc truyền biến `$env:DATABASE_URL="postgresql://antam_user:antam_password@localhost:5433/antam_hospital?schema=public"`). |
+| Giao diện báo lỗi `501 NOT_IMPLEMENTED` khi bấm Đăng nhập hoặc tải danh sách | Đây là hành vi chuẩn của bản **Starter Edition** trên nhánh `main` khi route nghiệp vụ chưa được TV2–TV5 code. | Xem comment `TODO` trong file `backend/src/routes/*.routes.ts` tương ứng và đặc tả `backend/API_CONTRACT.md` để lập trình service/route. |
+| Đã sửa code trong `backend/src/` nhưng container Docker chưa cập nhật | Container `antam-backend` chạy bản build `dist/` cũ. | Nếu đang code, hãy chuyển sang **Chế độ Hybrid** (`docker compose stop backend` và chạy `npm run dev` ở máy), hoặc chạy `docker compose up --build -d backend` để build lại image. |
