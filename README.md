@@ -234,7 +234,7 @@ Sau khi 3 container báo `Up` / `(healthy)`, mở trình duyệt kiểm tra 3 đ
 
 ---
 
-### Bước 5: Chế độ chạy Hybrid để Code (Khuyên dùng khi lập trình)
+### Bước 5: Chế độ chạy Hybrid để Code 
 
 Khi bắt đầu lập trình phần Backend, bạn nên giữ **PostgreSQL chạy trong Docker** và chạy **Backend + Frontend trực tiếp trên máy** để nhận tính năng tự khởi động lại khi lưu file (`tsx watch` & Vite HMR):
 
