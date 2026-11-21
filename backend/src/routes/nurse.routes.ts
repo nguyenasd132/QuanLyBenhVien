@@ -28,15 +28,20 @@ import {
 import { badRequest, conflict, notFound } from '../utils/errors';
 import { sendError, sendSuccess } from '../utils/response';
 
+/**
+ * Cổng Điều dưỡng (TV4) — `/api/nurse`, Role: NURSE.
+ * Bao gồm: Tiếp đón & Walk-in (TV4-02), Đo sinh hiệu Triage & BHYT (TV4-03),
+ * Thu ngân viện phí/QR (TV4-04), Cấp phát thuốc & Giường nội trú (TV4-05).
+ */
 const router = Router();
 
 router.use(authenticate, requireRole('NURSE'));
 
 const BCRYPT_SALT_ROUNDS = 10;
 
-// ============================================================================
-// 1. DTO Interfaces & Prisma Includes cho Tiếp đón / Lịch hẹn (TV4-01 & TV4-02)
-// ============================================================================
+// ---------------------------------------------------------------------------
+// 1. DTO Interfaces & Prisma Includes cho Tiếp đón / Sinh hiệu
+// ---------------------------------------------------------------------------
 
 export interface PatientSummaryDto {
   id: string;
@@ -309,7 +314,6 @@ async function computeLiveCurrentSttMap(
     result.set(key, null);
   }
 
-  // Ưu tiên STT đang IN_PROGRESS; nếu không có thì lấy STT COMPLETED lớn nhất
   const inProgressMap = new Map<string, number>();
   const completedMaxMap = new Map<string, number>();
 
@@ -347,9 +351,9 @@ async function getLiveCurrentSttForAppointment(
   return map.get(key) ?? null;
 }
 
-// ============================================================================
-// 2. Zod Validation Schemas cho Tiếp đón & Walk-in (TV4-02)
-// ============================================================================
+// ---------------------------------------------------------------------------
+// 2. Zod Validation Schemas cho Tiếp đón, Walk-in (TV4-02) & Sinh hiệu (TV4-03)
+// ---------------------------------------------------------------------------
 
 const optionalTrimmed = (maxLength = 255) =>
   z
@@ -401,7 +405,6 @@ const newWalkInPatientSchema = z.object({
 
 export const createWalkInSchema = z.object({
   patientId: optionalTrimmed(100),
-  // Hỗ trợ truyền phẳng hoặc truyền qua object newPatient theo API_CONTRACT.md
   fullName: optionalTrimmed(120),
   phone: optionalTrimmed(20),
   email: optionalTrimmed(120),
@@ -420,6 +423,56 @@ export const createWalkInSchema = z.object({
   isPriority: z.boolean().optional().default(false),
   chiefComplaint: optionalTrimmed(500),
   autoCheckIn: z.boolean().optional().default(true)
+});
+
+export const listProceduresQuerySchema = z.object({
+  appointmentId: z.string().trim().optional(),
+  date: z.string().trim().optional()
+});
+
+const vitalsSchema = z.object({
+  bloodPressureSystolic: z.coerce.number().positive().optional(),
+  bloodPressureDiastolic: z.coerce.number().positive().optional(),
+  heartRate: z.coerce.number().positive().optional(),
+  temperature: z.coerce.number().positive().optional(),
+  spo2: z.coerce.number().min(0).max(100).optional(),
+  respiratoryRate: z.coerce.number().positive().optional(),
+  heightCm: z.coerce.number().positive().optional(),
+  weightKg: z.coerce.number().positive().optional(),
+  bmi: z.coerce.number().positive().optional()
+});
+
+const checklistSchema = z.object({
+  bhytVerified: z.boolean().optional(),
+  identityVerified: z.boolean().optional(),
+  allergyScreened: z.boolean().optional(),
+  consentSigned: z.boolean().optional(),
+  notes: z.string().trim().max(500).optional(),
+  items: z
+    .array(
+      z.object({
+        label: z.string().trim(),
+        checked: z.boolean()
+      })
+    )
+    .optional()
+});
+
+export const saveProcedureSchema = z.object({
+  appointmentId: optionalTrimmed(100),
+  vitals: vitalsSchema.optional(),
+  // Hỗ trợ truyền phẳng các chỉ số sinh hiệu nếu gọi từ endpoint /:id/triage
+  bloodPressureSystolic: z.coerce.number().positive().optional(),
+  bloodPressureDiastolic: z.coerce.number().positive().optional(),
+  heartRate: z.coerce.number().positive().optional(),
+  temperature: z.coerce.number().positive().optional(),
+  spo2: z.coerce.number().min(0).max(100).optional(),
+  respiratoryRate: z.coerce.number().positive().optional(),
+  heightCm: z.coerce.number().positive().optional(),
+  weightKg: z.coerce.number().positive().optional(),
+  bmi: z.coerce.number().positive().optional(),
+  checklistData: checklistSchema.optional(),
+  triageNotes: optionalTrimmed(500)
 });
 
 function parseValidDateString(rawDate?: string, fieldLabel = 'Ngày khám'): Date {
@@ -447,13 +500,10 @@ function parseOptionalDob(rawDob?: string): Date | null {
   return parsed;
 }
 
-// ============================================================================
-// 3. Xử lý nghiệp vụ Tiếp đón, Check-in & Walk-in (TV4-02)
-// ============================================================================
+// ---------------------------------------------------------------------------
+// 3. Nghiệp vụ Tiếp đón, Check-in & Walk-in (TV4-02)
+// ---------------------------------------------------------------------------
 
-/**
- * Tìm kiếm hồ sơ bệnh nhân nhanh tại quầy tiếp đón hoặc khi xếp giường nội trú.
- */
 async function handleSearchPatients(req: Request, res: Response) {
   const { search } = req.query as z.infer<typeof searchPatientsQuerySchema>;
   const keyword = search?.trim();
@@ -481,9 +531,6 @@ async function handleSearchPatients(req: Request, res: Response) {
   return sendSuccess(res, patients.map(mapPatientToSummaryDto), 200);
 }
 
-/**
- * Danh sách tiếp đón trong ngày (tìm theo mã hẹn / mã BN / họ tên / SĐT / STT).
- */
 async function handleListReceptionAppointments(req: Request, res: Response) {
   const query = req.query as z.infer<typeof listReceptionAppointmentsQuerySchema>;
 
@@ -523,7 +570,6 @@ async function handleListReceptionAppointments(req: Request, res: Response) {
       { doctor: { user: { fullName: { contains: keyword, mode: 'insensitive' } } } }
     ];
 
-    // Hỗ trợ tìm theo STT dạng "3", "03", "#03", "STT 3"
     const sttMatch = keyword.match(/^(?:#|stt\s*#?)?0*(\d+)$/i);
     if (sttMatch) {
       const parsedStt = Number(sttMatch[1]);
@@ -551,9 +597,6 @@ async function handleListReceptionAppointments(req: Request, res: Response) {
   return sendSuccess(res, data, 200);
 }
 
-/**
- * Thực hiện chuyển trạng thái lịch hẹn sang CHECKED_IN và tạo thông báo cho bệnh nhân.
- */
 async function performAppointmentCheckIn(appointmentId: string): Promise<AppointmentDto> {
   const existing = await prisma.appointment.findUnique({
     where: { id: appointmentId },
@@ -625,9 +668,6 @@ async function performAppointmentCheckIn(appointmentId: string): Promise<Appoint
   return mapAppointmentToDto(updated, liveCurrentStt);
 }
 
-/**
- * Check-in nhanh theo appointmentId, appointmentCode, hoặc tổ hợp (queueNumber + doctorId + date + session).
- */
 async function handleCheckInLookup(req: Request, res: Response) {
   const input = req.body as z.infer<typeof checkInLookupSchema>;
 
@@ -674,7 +714,6 @@ async function handleCheckInLookup(req: Request, res: Response) {
       throw notFound('Không tìm thấy lịch hẹn khớp với Số thứ tự (STT) đã chọn');
     }
 
-    // Ưu tiên bản ghi đang ở trạng thái BOOKED nếu có
     const bookedMatch = matches.find((m) => m.status === 'BOOKED') ?? matches[0];
     targetAppointmentId = bookedMatch.id;
   } else {
@@ -687,9 +726,6 @@ async function handleCheckInLookup(req: Request, res: Response) {
   return sendSuccess(res, dto, 200);
 }
 
-/**
- * Check-in lịch hẹn trực tiếp theo ID trên dòng danh sách.
- */
 async function handleCheckInById(req: Request, res: Response) {
   const { id } = req.params;
   if (!id) {
@@ -699,12 +735,6 @@ async function handleCheckInById(req: Request, res: Response) {
   return sendSuccess(res, dto, 200);
 }
 
-/**
- * Đăng ký khám vãng lai tại quầy (Walk-in):
- * - Hỗ trợ bệnh nhân đã có hồ sơ (patientId) hoặc tạo mới bệnh nhân ngay tại quầy (newPatient / flat fields)
- * - Khóa dòng lịch trực bác sĩ (SELECT ... FOR UPDATE) để cấp STT tuần tự chống trùng
- * - Hỗ trợ cờ ưu tiên (isPriority) và tự động check-in đưa vào hàng đợi bác sĩ
- */
 async function handleCreateWalkIn(req: Request, res: Response) {
   const input = req.body as z.infer<typeof createWalkInSchema>;
   const appointmentDate = parseValidDateString(input.date, 'Ngày khám');
@@ -738,7 +768,6 @@ async function handleCreateWalkIn(req: Request, res: Response) {
     : null;
 
   const createdAppointment = await prisma.$transaction(async (tx) => {
-    // 1. Kiểm tra bác sĩ tồn tại
     const doctor = await tx.doctor.findUnique({
       where: { id: input.doctorId },
       include: {
@@ -752,7 +781,6 @@ async function handleCreateWalkIn(req: Request, res: Response) {
       throw notFound('Không tìm thấy bác sĩ khám hoặc bác sĩ không còn hoạt động');
     }
 
-    // 2. Xác định hoặc tạo mới hồ sơ bệnh nhân
     let resolvedPatientId: string;
     let resolvedPatientUserId: string;
 
@@ -812,7 +840,6 @@ async function handleCreateWalkIn(req: Request, res: Response) {
       resolvedPatientUserId = createdUser.id;
     }
 
-    // 3. Đảm bảo có bản ghi lịch trực (doctor_schedules) cho (doctorId, appointmentDate, session)
     const bounds = getSessionBounds(session);
     const ensuredSchedule = await tx.doctorSchedule.upsert({
       where: {
@@ -836,7 +863,7 @@ async function handleCreateWalkIn(req: Request, res: Response) {
       }
     });
 
-    // 4. Khóa dòng lịch trực bằng SELECT ... FOR UPDATE để cấp STT nguyên tử chống trùng
+    // Khóa dòng lịch trực để cấp STT tuần tự không bị trùng khi nhiều quầy gọi cùng lúc
     const lockedSchedules = await tx.$queryRaw<
       Array<{
         id: string;
@@ -861,7 +888,6 @@ async function handleCreateWalkIn(req: Request, res: Response) {
       throw conflict('Buổi khám của bác sĩ hiện đang tạm ngưng tiếp nhận');
     }
 
-    // 5. Chặn đặt trùng cùng bệnh nhân + cùng bác sĩ + cùng ngày + cùng buổi (còn hiệu lực)
     const duplicateActive = await tx.appointment.findFirst({
       where: {
         patientId: resolvedPatientId,
@@ -883,7 +909,6 @@ async function handleCreateWalkIn(req: Request, res: Response) {
       );
     }
 
-    // 6. Kiểm tra giới hạn số lượng bệnh nhân trong buổi (trừ trường hợp cấp cứu/ưu tiên nếu cần)
     const activeBookedCount = await tx.appointment.count({
       where: {
         doctorId: doctor.id,
@@ -897,7 +922,6 @@ async function handleCreateWalkIn(req: Request, res: Response) {
       throw conflict('Buổi khám của bác sĩ đã đầy số lượng tiếp nhận tối đa');
     }
 
-    // 7. Tính STT tiếp theo (không giảm khi có lịch hủy)
     const maxSttAgg = await tx.appointment.aggregate({
       where: {
         doctorId: doctor.id,
@@ -976,19 +1000,154 @@ async function handleCreateWalkIn(req: Request, res: Response) {
   return sendSuccess(res, mapAppointmentToDto(createdAppointment, liveCurrentStt), 201);
 }
 
-// ============================================================================
-// 4. Đăng ký Routes cho Cổng Điều dưỡng (/api/nurse)
-// ============================================================================
+// ---------------------------------------------------------------------------
+// 4. Nghiệp vụ Đo sinh hiệu Triage & Thủ thuật BHYT (TV4-03)
+// ---------------------------------------------------------------------------
 
-function notImplementedYet(taskCode: string, description: string) {
-  return (_req: Request, res: Response) =>
-    sendError(
-      res,
-      501,
-      'NOT_IMPLEMENTED',
-      `Chức năng ${description} (${taskCode}) thuộc Giai đoạn 2 — xem backend/API_CONTRACT.md`
-    );
+/** Danh sách các lượt đo sinh hiệu / thủ thuật điều dưỡng đã thực hiện. */
+async function handleListProcedures(req: Request, res: Response) {
+  const query = req.query as z.infer<typeof listProceduresQuerySchema>;
+  const where: Prisma.AppointmentWhereInput = {
+    triageData: {
+      not: Prisma.DbNull
+    }
+  };
+
+  if (query.appointmentId) {
+    where.id = query.appointmentId;
+  } else if (query.date && query.date.toUpperCase() !== 'ALL') {
+    where.appointmentDate = parseValidDateString(query.date, 'Ngày tra cứu');
+  }
+
+  const appointments = await prisma.appointment.findMany({
+    where,
+    orderBy: [{ appointmentDate: 'desc' }, { queueNumber: 'asc' }]
+  });
+
+  const procedures: NursingProcedureDto[] = [];
+  for (const apt of appointments) {
+    const proc = parseTriageProcedure(apt.id, apt.triageData);
+    if (proc) {
+      procedures.push(proc);
+    }
+  }
+
+  return sendSuccess(res, procedures, 200);
 }
+
+/**
+ * Ghi nhận hoặc cập nhật chỉ số sinh hiệu Triage (tự tính BMI) & checklist BHYT JSONB.
+ * Nếu bệnh nhân còn ở trạng thái BOOKED thì tự động chuyển sang CHECKED_IN để vào hàng đợi bác sĩ.
+ */
+async function handleSaveProcedure(req: Request, res: Response) {
+  const input = req.body as z.infer<typeof saveProcedureSchema>;
+  const appointmentId = req.params.id || input.appointmentId;
+
+  if (!appointmentId) {
+    throw badRequest('Vui lòng cung cấp ID lịch hẹn (appointmentId) cần ghi nhận sinh hiệu');
+  }
+
+  const existing = await prisma.appointment.findUnique({
+    where: { id: appointmentId }
+  });
+
+  if (!existing) {
+    throw notFound('Không tìm thấy lịch hẹn cần đo sinh hiệu');
+  }
+
+  if (existing.status === 'CANCELLED' || existing.status === 'NO_SHOW') {
+    throw conflict('Không thể ghi nhận sinh hiệu cho lịch hẹn đã hủy hoặc vắng mặt');
+  }
+
+  const nurse = await prisma.nurse.findUnique({
+    where: { userId: req.user!.userId },
+    include: { user: { select: { fullName: true } } }
+  });
+
+  // Gom dữ liệu vitals từ object con `vitals` hoặc từ các trường phẳng
+  const rawVitals: VitalsData = {
+    ...(input.vitals || {}),
+    ...(input.bloodPressureSystolic !== undefined
+      ? { bloodPressureSystolic: input.bloodPressureSystolic }
+      : {}),
+    ...(input.bloodPressureDiastolic !== undefined
+      ? { bloodPressureDiastolic: input.bloodPressureDiastolic }
+      : {}),
+    ...(input.heartRate !== undefined ? { heartRate: input.heartRate } : {}),
+    ...(input.temperature !== undefined ? { temperature: input.temperature } : {}),
+    ...(input.spo2 !== undefined ? { spo2: input.spo2 } : {}),
+    ...(input.respiratoryRate !== undefined ? { respiratoryRate: input.respiratoryRate } : {}),
+    ...(input.heightCm !== undefined ? { heightCm: input.heightCm } : {}),
+    ...(input.weightKg !== undefined ? { weightKg: input.weightKg } : {}),
+    ...(input.bmi !== undefined ? { bmi: input.bmi } : {})
+  };
+
+  // Tự tính lại BMI = cân nặng (kg) / (chiều cao (m))^2 nếu có đủ chiều cao & cân nặng
+  if (rawVitals.heightCm && rawVitals.weightKg && rawVitals.heightCm > 0) {
+    const heightM = rawVitals.heightCm / 100;
+    rawVitals.bmi = Number((rawVitals.weightKg / (heightM * heightM)).toFixed(1));
+  }
+
+  const prevProcedure = parseTriageProcedure(existing.id, existing.triageData);
+  const now = new Date();
+
+  const mergedChecklist: ChecklistData = input.checklistData ??
+    prevProcedure?.checklistData ?? {
+      bhytVerified: true,
+      identityVerified: true,
+      allergyScreened: true,
+      consentSigned: true
+    };
+
+  const triagePayload: TriageDataJson = {
+    id: prevProcedure?.id || crypto.randomUUID(),
+    nurseId: nurse?.id || req.user!.userId,
+    nurseName: nurse?.user.fullName || 'Điều dưỡng',
+    vitals: {
+      ...(prevProcedure?.vitals || {}),
+      ...rawVitals
+    },
+    checklistData: mergedChecklist,
+    triageNotes:
+      input.triageNotes !== undefined
+        ? input.triageNotes || null
+        : prevProcedure?.triageNotes ?? null,
+    recordedAt: now.toISOString()
+  };
+
+  // Nếu lịch hẹn đang ở BOOKED mà bệnh nhân đã vào đo sinh hiệu thì chuyển sang CHECKED_IN luôn
+  const shouldAutoCheckIn = existing.status === 'BOOKED';
+
+  await prisma.appointment.update({
+    where: { id: existing.id },
+    data: {
+      triageData: triagePayload as unknown as Prisma.InputJsonValue,
+      ...(shouldAutoCheckIn
+        ? {
+            status: 'CHECKED_IN',
+            checkedInAt: existing.checkedInAt ?? now
+          }
+        : {})
+    }
+  });
+
+  const responseDto: NursingProcedureDto = {
+    id: triagePayload.id,
+    appointmentId: existing.id,
+    nurseId: triagePayload.nurseId,
+    nurseName: triagePayload.nurseName,
+    vitals: triagePayload.vitals,
+    checklistData: triagePayload.checklistData,
+    triageNotes: triagePayload.triageNotes,
+    recordedAt: triagePayload.recordedAt
+  };
+
+  return sendSuccess(res, responseDto, 200);
+}
+
+// ---------------------------------------------------------------------------
+// 5. Đăng ký Routes Cổng Điều dưỡng (/api/nurse)
+// ---------------------------------------------------------------------------
 
 // --- [TV4-02] Tiếp đón, Tìm kiếm BN, Check-in & Đăng ký vãng lai Walk-in ---
 router.get(
@@ -1038,21 +1197,29 @@ router.post(
   asyncHandler(handleCreateWalkIn)
 );
 
-// --- [TV4-01 Framework -> TV4-03] Đo sinh hiệu Triage & Thủ thuật BHYT ---
+// --- [TV4-03] Đo sinh hiệu Triage & Thủ thuật BHYT ---
 router.get(
   '/procedures',
-  notImplementedYet('TV4-03', 'Danh sách thủ thuật & sinh hiệu Triage')
+  validateQuery(listProceduresQuerySchema),
+  asyncHandler(handleListProcedures)
 );
 router.post(
   '/procedures',
-  notImplementedYet('TV4-03', 'Ghi nhận chỉ số sinh hiệu Triage & checklist BHYT')
+  validateBody(saveProcedureSchema),
+  asyncHandler(handleSaveProcedure)
 );
 router.post(
   '/appointments/:id/triage',
-  notImplementedYet('TV4-03', 'Ghi nhận chỉ số sinh hiệu Triage & checklist BHYT')
+  validateBody(saveProcedureSchema),
+  asyncHandler(handleSaveProcedure)
+);
+router.patch(
+  '/appointments/:id/triage',
+  validateBody(saveProcedureSchema),
+  asyncHandler(handleSaveProcedure)
 );
 
-// --- [TV4-01 Framework -> TV4-04] Thu ngân & Đối soát thanh toán ---
+// --- [TV4-04] Thu ngân & Đối soát thanh toán nguyên tử ---
 router.get(
   '/payments',
   validateQuery(paymentService.listNursePaymentsQuerySchema),
@@ -1076,15 +1243,29 @@ router.get(
 router.post(
   '/payments/:id/confirm',
   validateBody(paymentService.confirmPaymentSchema),
-  notImplementedYet('TV4-04', 'Thu ngân xác nhận thanh toán nguyên tử')
+  asyncHandler(async (req: Request, res: Response) => {
+    const result = await paymentService.confirmNursePayment(
+      req.user!.userId,
+      req.params.id,
+      req.body
+    );
+    return sendSuccess(res, result, 200);
+  })
 );
 router.post(
   '/payments/:id/reject',
   validateBody(paymentService.rejectPaymentSchema),
-  notImplementedYet('TV4-04', 'Thu ngân từ chối yêu cầu thanh toán QR')
+  asyncHandler(async (req: Request, res: Response) => {
+    const result = await paymentService.rejectNursePayment(
+      req.user!.userId,
+      req.params.id,
+      req.body
+    );
+    return sendSuccess(res, result, 200);
+  })
 );
 
-// --- [TV4-01 Framework -> TV4-05] Cấp phát thuốc & Điều phối giường bệnh ---
+// --- [TV4-05] Cấp phát thuốc trừ kho & Điều phối giường bệnh nội trú ---
 router.get(
   '/prescriptions',
   validateQuery(paymentService.listNursePrescriptionsQuerySchema),
@@ -1097,7 +1278,13 @@ router.get(
 );
 router.post(
   '/prescriptions/:id/dispense',
-  notImplementedYet('TV4-05', 'Cấp phát đơn thuốc & trừ tồn kho')
+  asyncHandler(async (req: Request, res: Response) => {
+    const result = await paymentService.dispenseNursePrescription(
+      req.user!.userId,
+      req.params.id
+    );
+    return sendSuccess(res, result, 200);
+  })
 );
 
 router.get(
@@ -1113,27 +1300,68 @@ router.get(
 router.post(
   '/beds/:id/admit',
   validateBody(bedService.admitBedSchema),
-  notImplementedYet('TV4-05', 'Tiếp nhận bệnh nhân vào giường nội trú')
+  asyncHandler(async (req: Request, res: Response) => {
+    const bed = await bedService.admitPatientToBed(
+      req.user!.userId,
+      req.params.id,
+      req.body
+    );
+    return sendSuccess(res, bed, 200);
+  })
 );
 router.post(
   '/beds/:id/assign',
   validateBody(bedService.admitBedSchema),
-  notImplementedYet('TV4-05', 'Tiếp nhận bệnh nhân vào giường nội trú')
+  asyncHandler(async (req: Request, res: Response) => {
+    const bed = await bedService.admitPatientToBed(
+      req.user!.userId,
+      req.params.id,
+      req.body
+    );
+    return sendSuccess(res, bed, 200);
+  })
 );
 router.post(
   '/beds/:id/transfer',
   validateBody(bedService.transferBedSchema),
-  notImplementedYet('TV4-05', 'Chuyển giường nội trú cho bệnh nhân')
+  asyncHandler(async (req: Request, res: Response) => {
+    const bed = await bedService.transferPatientBed(
+      req.user!.userId,
+      req.params.id,
+      req.body
+    );
+    return sendSuccess(res, bed, 200);
+  })
 );
 router.post(
   '/beds/:id/discharge',
   validateBody(bedService.dischargeBedSchema),
-  notImplementedYet('TV4-05', 'Làm thủ tục xuất viện & trả giường')
+  asyncHandler(async (req: Request, res: Response) => {
+    const bed = await bedService.dischargePatientFromBed(
+      req.user!.userId,
+      req.params.id,
+      req.body
+    );
+    return sendSuccess(res, bed, 200);
+  })
 );
 router.patch(
   '/beds/:id/status',
   validateBody(bedService.updateBedStatusSchema),
-  notImplementedYet('TV4-05', 'Cập nhật trạng thái giường trống / bảo trì')
+  asyncHandler(async (req: Request, res: Response) => {
+    const bed = await bedService.updateBedStatus(req.params.id, req.body);
+    return sendSuccess(res, bed, 200);
+  })
 );
+
+// Cảnh báo đỏ 501 cho bất kỳ route nào chưa được cài đặt
+router.all('*', (_req: Request, res: Response) => {
+  return sendError(
+    res,
+    501,
+    'NOT_IMPLEMENTED',
+    'Chức năng này chưa được cài đặt — xem backend/API_CONTRACT.md'
+  );
+});
 
 export default router;

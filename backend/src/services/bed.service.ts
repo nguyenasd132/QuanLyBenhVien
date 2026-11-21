@@ -1,11 +1,14 @@
+import crypto from 'crypto';
 import { BedStatus, Gender, Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { prisma } from '../config/prisma';
+import { BedAssignmentHistoryJson } from '../types';
 import { formatDateOnly } from '../utils/date';
+import { badRequest, conflict, notFound } from '../utils/errors';
 
-// ============================================================================
-// 1. DTO Interfaces (Bám sát backend/API_CONTRACT.md)
-// ============================================================================
+// ---------------------------------------------------------------------------
+// 1. DTO Interfaces (Theo đặc tả backend/API_CONTRACT.md)
+// ---------------------------------------------------------------------------
 
 export interface BedDto {
   id: string;
@@ -54,9 +57,9 @@ export interface NurseBedsResponseDto {
   beds: BedDto[];
 }
 
-// ============================================================================
-// 2. Zod Validation Schemas (TV4-01 Framework)
-// ============================================================================
+// ---------------------------------------------------------------------------
+// 2. Zod Schemas
+// ---------------------------------------------------------------------------
 
 export const listBedsQuerySchema = z.object({
   departmentId: z.string().trim().optional(),
@@ -67,14 +70,16 @@ export const listBedsQuerySchema = z.object({
 export const admitBedSchema = z.object({
   patientId: z
     .string({ required_error: 'Vui lòng chọn bệnh nhân nhập viện' })
-    .uuid('ID bệnh nhân không hợp lệ'),
+    .trim()
+    .min(1, 'Vui lòng chọn bệnh nhân nhập viện'),
   notes: z.string().trim().max(500, 'Ghi chú tối đa 500 ký tự').optional()
 });
 
 export const transferBedSchema = z.object({
   targetBedId: z
     .string({ required_error: 'Vui lòng chọn giường đích cần chuyển đến' })
-    .uuid('ID giường đích không hợp lệ'),
+    .trim()
+    .min(1, 'Vui lòng chọn giường đích cần chuyển đến'),
   notes: z.string().trim().max(500, 'Ghi chú tối đa 500 ký tự').optional()
 });
 
@@ -95,9 +100,9 @@ export type TransferBedInput = z.infer<typeof transferBedSchema>;
 export type DischargeBedInput = z.infer<typeof dischargeBedSchema>;
 export type UpdateBedStatusInput = z.infer<typeof updateBedStatusSchema>;
 
-// ============================================================================
-// 3. Prisma Includes & DTO Mappers (Kiểm tra bảng beds / rooms / departments)
-// ============================================================================
+// ---------------------------------------------------------------------------
+// 3. Prisma Includes & Mappers
+// ---------------------------------------------------------------------------
 
 export const BED_DETAIL_INCLUDE = {
   room: {
@@ -164,13 +169,15 @@ function calcOccupancyRate(occupied: number, total: number): number {
   return Math.round((occupied / total) * 100);
 }
 
-// ============================================================================
-// 4. Service Functions (Khung truy vấn & thống kê công suất giường)
-// ============================================================================
+function parseAssignmentHistory(raw: Prisma.JsonValue | null | undefined): BedAssignmentHistoryJson[] {
+  return Array.isArray(raw) ? (raw as unknown as BedAssignmentHistoryJson[]) : [];
+}
 
-/**
- * Lấy danh sách giường bệnh kèm thống kê tổng quan và thống kê công suất theo từng khoa.
- */
+// ---------------------------------------------------------------------------
+// 4. Nghiệp vụ Quản lý & Điều phối Giường bệnh Nội trú (TV4-01 & TV4-05)
+// ---------------------------------------------------------------------------
+
+/** Lấy sơ đồ giường bệnh kèm thống kê tổng quan và tỷ lệ lấp đầy theo từng khoa. */
 export async function listBedsWithStats(query: ListBedsQuery): Promise<NurseBedsResponseDto> {
   const allBeds = await prisma.bed.findMany({
     include: BED_DETAIL_INCLUDE,
@@ -250,4 +257,286 @@ export async function listBedsWithStats(query: ListBedsQuery): Promise<NurseBeds
     byDepartment,
     beds: filtered.map(mapBedToDto)
   };
+}
+
+/**
+ * Tiếp nhận bệnh nhân vào giường nội trú (Admit):
+ * - Chặn nếu giường đang OCCUPIED hoặc MAINTENANCE
+ * - Chặn nếu bệnh nhân đã nằm ở một giường khác
+ * - Ghi lịch sử ADMIT vào cột assignment_history JSONB
+ */
+export async function admitPatientToBed(
+  nurseUserId: string,
+  bedId: string,
+  input: AdmitBedInput
+): Promise<BedDto> {
+  const nurse = await prisma.nurse.findUnique({
+    where: { userId: nurseUserId },
+    select: { id: true }
+  });
+
+  return prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`
+      SELECT id FROM beds WHERE id = ${bedId} FOR UPDATE
+    `;
+
+    const bed = await tx.bed.findUnique({
+      where: { id: bedId }
+    });
+
+    if (!bed) {
+      throw notFound('Không tìm thấy giường bệnh');
+    }
+
+    if (bed.status !== 'AVAILABLE' || bed.currentPatientId !== null) {
+      throw conflict('Giường bệnh hiện đang có người nằm hoặc đang bảo trì, không thể xếp bệnh nhân');
+    }
+
+    const patient = await tx.patient.findUnique({
+      where: { id: input.patientId },
+      select: { id: true, patientCode: true }
+    });
+
+    if (!patient) {
+      throw notFound('Không tìm thấy hồ sơ bệnh nhân cần nhập viện');
+    }
+
+    // Kiểm tra xem bệnh nhân có đang nằm ở giường nào khác không
+    const occupiedBed = await tx.bed.findFirst({
+      where: { currentPatientId: patient.id },
+      select: { id: true, bedNumber: true }
+    });
+
+    if (occupiedBed) {
+      throw conflict(
+        `Bệnh nhân hiện đang nằm tại giường ${occupiedBed.bedNumber}, vui lòng sử dụng chức năng Chuyển giường`
+      );
+    }
+
+    const now = new Date();
+    const history = parseAssignmentHistory(bed.assignmentHistory);
+    history.push({
+      id: crypto.randomUUID(),
+      patientId: patient.id,
+      assignedByNurseId: nurse?.id ?? null,
+      action: 'ADMIT',
+      admittedAt: now.toISOString(),
+      dischargedAt: null,
+      notes: input.notes ?? null
+    });
+
+    const updated = await tx.bed.update({
+      where: { id: bed.id },
+      data: {
+        status: 'OCCUPIED',
+        currentPatientId: patient.id,
+        admittedAt: now,
+        notes: input.notes ?? null,
+        assignmentHistory: history as unknown as Prisma.InputJsonValue
+      },
+      include: BED_DETAIL_INCLUDE
+    });
+
+    return mapBedToDto(updated);
+  });
+}
+
+/**
+ * Chuyển bệnh nhân từ giường đang nằm sang giường trống khác (Transfer):
+ * - Giải phóng giường cũ về AVAILABLE (ghi lịch sử TRANSFER_OUT)
+ * - Chuyển bệnh nhân sang giường đích OCCUPIED (ghi lịch sử TRANSFER_IN)
+ */
+export async function transferPatientBed(
+  nurseUserId: string,
+  sourceBedId: string,
+  input: TransferBedInput
+): Promise<BedDto> {
+  if (sourceBedId === input.targetBedId) {
+    throw badRequest('Giường chuyển đến phải khác giường hiện tại');
+  }
+
+  const nurse = await prisma.nurse.findUnique({
+    where: { userId: nurseUserId },
+    select: { id: true }
+  });
+
+  return prisma.$transaction(async (tx) => {
+    const sourceBed = await tx.bed.findUnique({
+      where: { id: sourceBedId }
+    });
+
+    if (!sourceBed) {
+      throw notFound('Không tìm thấy giường nguồn');
+    }
+
+    if (sourceBed.status !== 'OCCUPIED' || !sourceBed.currentPatientId) {
+      throw conflict('Giường nguồn hiện không có bệnh nhân để chuyển');
+    }
+
+    const targetBed = await tx.bed.findUnique({
+      where: { id: input.targetBedId }
+    });
+
+    if (!targetBed) {
+      throw notFound('Không tìm thấy giường đích');
+    }
+
+    if (targetBed.status !== 'AVAILABLE' || targetBed.currentPatientId !== null) {
+      throw conflict('Giường đích không còn trống, không thể chuyển bệnh nhân đến');
+    }
+
+    const patientId = sourceBed.currentPatientId;
+    const now = new Date();
+    const nowIso = now.toISOString();
+
+    // Cập nhật lịch sử giường cũ và giải phóng currentPatientId trước (do cột current_patient_id là UNIQUE)
+    const sourceHistory = parseAssignmentHistory(sourceBed.assignmentHistory).map((item) =>
+      item.patientId === patientId && !item.dischargedAt
+        ? { ...item, dischargedAt: nowIso }
+        : item
+    );
+    sourceHistory.push({
+      id: crypto.randomUUID(),
+      patientId,
+      assignedByNurseId: nurse?.id ?? null,
+      action: 'TRANSFER_OUT',
+      admittedAt: sourceBed.admittedAt ? sourceBed.admittedAt.toISOString() : null,
+      dischargedAt: nowIso,
+      notes: input.notes ?? `Chuyển sang giường ${targetBed.bedNumber}`
+    });
+
+    await tx.bed.update({
+      where: { id: sourceBed.id },
+      data: {
+        status: 'AVAILABLE',
+        currentPatientId: null,
+        admittedAt: null,
+        notes: null,
+        assignmentHistory: sourceHistory as unknown as Prisma.InputJsonValue
+      }
+    });
+
+    // Cập nhật lịch sử giường mới và gán bệnh nhân vào
+    const targetHistory = parseAssignmentHistory(targetBed.assignmentHistory);
+    targetHistory.push({
+      id: crypto.randomUUID(),
+      patientId,
+      assignedByNurseId: nurse?.id ?? null,
+      action: 'TRANSFER_IN',
+      admittedAt: nowIso,
+      dischargedAt: null,
+      notes: input.notes ?? `Chuyển từ giường ${sourceBed.bedNumber}`
+    });
+
+    const updatedTarget = await tx.bed.update({
+      where: { id: targetBed.id },
+      data: {
+        status: 'OCCUPIED',
+        currentPatientId: patientId,
+        admittedAt: sourceBed.admittedAt ?? now,
+        notes: input.notes ?? sourceBed.notes,
+        assignmentHistory: targetHistory as unknown as Prisma.InputJsonValue
+      },
+      include: BED_DETAIL_INCLUDE
+    });
+
+    return mapBedToDto(updatedTarget);
+  });
+}
+
+/**
+ * Làm thủ tục xuất viện & trả lại giường trống (Discharge):
+ * - Đóng lịch sử nằm viện trong assignment_history JSONB
+ * - Chuyển trạng thái giường về AVAILABLE
+ */
+export async function dischargePatientFromBed(
+  nurseUserId: string,
+  bedId: string,
+  input: DischargeBedInput = {}
+): Promise<BedDto> {
+  const nurse = await prisma.nurse.findUnique({
+    where: { userId: nurseUserId },
+    select: { id: true }
+  });
+
+  return prisma.$transaction(async (tx) => {
+    const bed = await tx.bed.findUnique({
+      where: { id: bedId }
+    });
+
+    if (!bed) {
+      throw notFound('Không tìm thấy giường bệnh');
+    }
+
+    if (bed.status !== 'OCCUPIED' || !bed.currentPatientId) {
+      throw conflict('Giường bệnh hiện không có bệnh nhân đang nằm để làm thủ tục xuất viện');
+    }
+
+    const patientId = bed.currentPatientId;
+    const nowIso = new Date().toISOString();
+
+    const history = parseAssignmentHistory(bed.assignmentHistory).map((item) =>
+      item.patientId === patientId && !item.dischargedAt
+        ? { ...item, dischargedAt: nowIso }
+        : item
+    );
+    history.push({
+      id: crypto.randomUUID(),
+      patientId,
+      assignedByNurseId: nurse?.id ?? null,
+      action: 'DISCHARGE',
+      admittedAt: bed.admittedAt ? bed.admittedAt.toISOString() : null,
+      dischargedAt: nowIso,
+      notes: input.notes ?? 'Hoàn tất thủ tục xuất viện'
+    });
+
+    const updated = await tx.bed.update({
+      where: { id: bed.id },
+      data: {
+        status: 'AVAILABLE',
+        currentPatientId: null,
+        admittedAt: null,
+        notes: null,
+        assignmentHistory: history as unknown as Prisma.InputJsonValue
+      },
+      include: BED_DETAIL_INCLUDE
+    });
+
+    return mapBedToDto(updated);
+  });
+}
+
+/**
+ * Đổi trạng thái giường trống <-> bảo trì (AVAILABLE / MAINTENANCE):
+ * - Chặn nếu giường đang có bệnh nhân nằm (OCCUPIED)
+ */
+export async function updateBedStatus(
+  bedId: string,
+  input: UpdateBedStatusInput
+): Promise<BedDto> {
+  const bed = await prisma.bed.findUnique({
+    where: { id: bedId }
+  });
+
+  if (!bed) {
+    throw notFound('Không tìm thấy giường bệnh');
+  }
+
+  if (bed.status === 'OCCUPIED' || bed.currentPatientId !== null) {
+    throw conflict('Không thể chuyển trạng thái khi giường đang có bệnh nhân nằm');
+  }
+
+  const updated = await prisma.bed.update({
+    where: { id: bed.id },
+    data: {
+      status: input.status,
+      notes:
+        input.status === 'MAINTENANCE'
+          ? input.notes ?? 'Đang bảo trì / vệ sinh giường'
+          : input.notes ?? null
+    },
+    include: BED_DETAIL_INCLUDE
+  });
+
+  return mapBedToDto(updated);
 }

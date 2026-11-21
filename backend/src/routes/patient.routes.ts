@@ -1,6 +1,9 @@
 import { Request, Response, Router } from 'express';
 import { authenticate, requireRole } from '../middleware/auth';
-import { sendError } from '../utils/response';
+import { asyncHandler } from '../middleware/errorHandler';
+import { validateBody, validateQuery } from '../middleware/validate';
+import * as paymentService from '../services/payment.service';
+import { sendError, sendSuccess } from '../utils/response';
 
 const router = Router();
 
@@ -11,7 +14,7 @@ function notImplemented(_req: Request, res: Response) {
     res,
     501,
     'NOT_IMPLEMENTED',
-    'Chức năng Cổng Bệnh nhân (TV2 / TV3 / TV4) chưa được cài đặt — xem backend/API_CONTRACT.md'
+    'Chức năng Cổng Bệnh nhân (TV2 / TV3) chưa được cài đặt — xem backend/API_CONTRACT.md'
   );
 }
 
@@ -36,8 +39,52 @@ function notImplemented(_req: Request, res: Response) {
  * [TV4 - Thanh toán QR / Tiền mặt phía Bệnh nhân (payment.service.ts)]:
  * - GET  /api/patient/invoices                  : Danh sách hóa đơn (viện phí & đơn thuốc tách riêng)
  * - GET  /api/patient/invoices/:id              : Chi tiết hóa đơn & thông tin QR
+ * - GET  /api/patient/payments                  : Lịch sử biên lai thanh toán của bệnh nhân
  * - POST /api/patient/payments                  : Khởi tạo thanh toán QR chuyển khoản hoặc tiền mặt tại quầy
  */
+
+// --- [TV4-04] Thanh toán QR / Tiền mặt phía Bệnh nhân ---
+router.get(
+  '/invoices',
+  validateQuery(paymentService.listPatientInvoicesQuerySchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    const invoices = await paymentService.listPatientInvoices(
+      req.user!.userId,
+      req.query as paymentService.ListPatientInvoicesQuery
+    );
+    return sendSuccess(res, invoices, 200);
+  })
+);
+
+router.get(
+  '/invoices/:id',
+  asyncHandler(async (req: Request, res: Response) => {
+    const invoice = await paymentService.getPatientInvoiceDetail(
+      req.user!.userId,
+      req.params.id
+    );
+    return sendSuccess(res, invoice, 200);
+  })
+);
+
+router.get(
+  '/payments',
+  asyncHandler(async (req: Request, res: Response) => {
+    const payments = await paymentService.listPatientPayments(req.user!.userId);
+    return sendSuccess(res, payments, 200);
+  })
+);
+
+router.post(
+  '/payments',
+  validateBody(paymentService.createPatientPaymentSchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    const result = await paymentService.createPatientPayment(req.user!.userId, req.body);
+    return sendSuccess(res, result, 201);
+  })
+);
+
+// Các route của TV2 & TV3 chưa cài đặt sẽ trả về cảnh báo đỏ 501 NOT_IMPLEMENTED
 router.all('*', notImplemented);
 
 export default router;
